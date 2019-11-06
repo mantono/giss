@@ -1,3 +1,5 @@
+use serde::Deserialize;
+
 use std::env;
 use std::fs;
 
@@ -42,7 +44,25 @@ fn main() {
     println!("{}", repo);
 
     let url: String = [GITHUB_API, "repos", repo, "issues"].join("/");
-    let body = reqwest::get(&url).expect("Request failed");
+    let client = reqwest::Client::new();
+    let mut response: reqwest::Response = client
+        .get(&url)
+        .bearer_auth(token)
+        .send()
+        .expect("Request to Github API failed");
+
+    let body: Vec<Issue> = response.json().expect("No body found in response");
 
     println!("{:?}", body);
+}
+
+#[derive(Debug, Deserialize)]
+struct Issue {
+    url: String,
+    id: u64,
+    title: String,
+    body: String,
+    updated_at: String,
+    state: String,
+    comments: u32,
 }
