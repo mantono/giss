@@ -7,12 +7,8 @@ const GITHUB_API: &str = "https://api.github.com";
 
 fn main() {
     let token: String = read_token();
-    println!("{}", token);
-
     let repo: String = read_repo();
-    println!("{}", repo);
 
-    println!("has add: {}", cmd_has("add"));
     if cmd_has("add") {
         create_issue(&repo, &token)
     } else {
@@ -66,17 +62,36 @@ fn list_issues(repo: &String, token: &String) {
         .send()
         .expect("Request to Github API failed");
 
-    let body: Vec<Issue> = response.json().expect("No body found in response");
+    let issues: Vec<Issue> = response.json().expect("No body found in response");
 
-    println!("{:?}", body);
+    issues
+        .iter()
+        .filter(|i| i.state == "open")
+        .for_each(print_issue);
 }
 
 fn create_issue(repo: &String, token: &String) {}
+
+fn print_issue(issue: &Issue) {
+    let title: String = truncate(issue.title.clone(), 50);
+    let body: String = truncate(issue.body.clone(), 200);
+    println!("#{} {} || {}", issue.number, title, body);
+}
+
+fn truncate(string: String, length: usize) -> String {
+    let new_length: usize = std::cmp::min(string.len(), length);
+    if new_length < string.len() {
+        string[..new_length].to_string()
+    } else {
+        string
+    }
+}
 
 #[derive(Debug, Deserialize)]
 struct Issue {
     url: String,
     id: u64,
+    number: u32,
     title: String,
     body: String,
     updated_at: String,
