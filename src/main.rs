@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use serde::Serialize;
 
 use std::env;
 use std::fs;
@@ -10,7 +11,13 @@ fn main() {
     let repo: String = read_repo();
 
     if cmd_has("add") {
-        create_issue(&repo, &token)
+        let test_issue = IssueRequest {
+            title: "A title".to_string(),
+            body: "A body".to_string(),
+            labels: vec!["test".to_string()],
+            assignees: vec![]
+        };
+        create_issue(&repo, &token, &test_issue)
     } else {
         list_issues(&repo, &token)
     }
@@ -70,7 +77,16 @@ fn list_issues(repo: &String, token: &String) {
         .for_each(print_issue);
 }
 
-fn create_issue(repo: &String, token: &String) {}
+fn create_issue(repo: &String, token: &String, issue: &IssueRequest) {
+    let url: String = [GITHUB_API, "repos", repo, "issues"].join("/");
+    let client = reqwest::Client::new();
+    let mut response: reqwest::Response = client
+    .post(&url)
+    .bearer_auth(token)
+    .json(&issue)
+    .send()
+    .expect("Failed to submit issue");
+}
 
 fn print_issue(issue: &Issue) {
     let title: String = truncate(issue.title.clone(), 50);
@@ -97,4 +113,12 @@ struct Issue {
     updated_at: String,
     state: String,
     comments: u32,
+}
+
+#[derive(Debug, Serialize)]
+struct IssueRequest {
+    title: String,
+    body: String,
+    labels: Vec<String>,
+    assignees: Vec<String>
 }
