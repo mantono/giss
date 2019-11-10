@@ -4,6 +4,8 @@ use serde::Serialize;
 use std::env;
 use std::env::temp_dir;
 use std::fs;
+use std::fs::File;
+use std::io::Write;
 use std::path::PathBuf;
 use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -65,6 +67,13 @@ fn cmd_has(key: &str) -> bool {
     env::args().any(|i| i == key)
 }
 
+const FILE_CONTENT: &str = "
+# Insert title and body above for issue. First line will automatically be interpreted
+# as the title of the subject and following lines will be the body of the issue.
+# Optionally, labels can be added with `labels: duplicate, jar, my-favourite-label` on a separate
+# line and assginees with `assignees: @assignedperson, @some-other-poor-fellow`.
+";
+
 fn read_issue(repo: &String) -> IssueRequest {
     let mut path: PathBuf = env::temp_dir();
     path.push(repo);
@@ -74,6 +83,9 @@ fn read_issue(repo: &String) -> IssueRequest {
         .as_millis();
 
     path.push(timestamp.to_string());
+
+    let mut file: File = File::create(&path).expect("Could not create file");
+    let result = file.write_all(FILE_CONTENT.as_bytes());
 
     Command::new("sh")
         .arg("-c")
