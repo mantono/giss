@@ -111,7 +111,7 @@ fn list_issues(repo: &String, token: &String) {
         .send()
         .expect("Request to Github API failed");
 
-    let issues: Vec<Issue> = response.json().expect("No body found in response");
+    let issues: Vec<Issue> = response.json().expect("Unable to process body in response");
 
     issues
         .iter()
@@ -132,12 +132,25 @@ fn create_issue(repo: &String, token: &String, issue: &IssueRequest) {
 
 fn print_issue(issue: &Issue) {
     let title: String = truncate(issue.title.clone(), 50);
-    let body: String = truncate(issue.body.clone(), 200);
-    println!("#{} {} || {}", issue.number, title, body);
+    let assignees: String = prefix_and_join("@", &issue.assignees);
+    let labels: String =
+        prefix_and_join("#", &issue.labels.iter().map(|x| x.name.clone()).collect());
+    println!("#{} {} | {} | {}", issue.number, title, labels, assignees);
 }
 
-fn truncate(string: String, length: usize) -> String {
-    let new_length: usize = std::cmp::min(string.len(), length);
+fn prefix_and_join<T: std::marker::Sized>(
+    prefix: &str,
+    vec: &Vec<T>,
+    parse: dyn Fn(&T) -> String,
+) -> String {
+    vec.iter()
+        .map(|s: &T| format!("{}{}", prefix, parse(s)))
+        .collect::<Vec<String>>()
+        .join(", ")
+}
+
+fn truncate(string: String, max_length: usize) -> String {
+    let new_length: usize = std::cmp::min(string.len(), max_length);
     if new_length < string.len() {
         string[..new_length].to_string()
     } else {
@@ -155,6 +168,18 @@ struct Issue {
     updated_at: String,
     state: String,
     comments: u32,
+    assignees: Vec<String>,
+    labels: Vec<Label>,
+}
+
+#[derive(Debug, Deserialize)]
+struct Label {
+    name: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct Assignee {
+    login: String,
 }
 
 #[derive(Debug, Serialize)]
