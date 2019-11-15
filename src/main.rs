@@ -17,14 +17,8 @@ fn main() {
     let repo: String = read_repo();
 
     if cmd_has("add") {
-        let read_isse: IssueRequest = read_issue(&repo);
-        let test_issue = IssueRequest {
-            title: "A title".to_string(),
-            body: "A body".to_string(),
-            labels: vec!["test".to_string()],
-            assignees: vec![],
-        };
-        create_issue(&repo, &token, &test_issue)
+        let read_issue: IssueRequest = read_issue(&repo);
+        create_issue(&repo, &token, &read_issue)
     } else {
         list_issues(&repo, &token)
     }
@@ -110,12 +104,51 @@ fn read_issue(repo: &String) -> IssueRequest {
         panic!("Editing commit message failed")
     }
 
+    let file_content: String = fs::read_to_string(path).expect("Could not read issue file");
+    let lines: Vec<&str> = file_content
+        .lines()
+        .filter(|line| !line.starts_with("#") && !line.trim().is_empty())
+        .collect();
+
+    let title: &str = lines.first().expect("Issue was empty");
+    let body: Vec<String> = lines
+        .iter()
+        .filter(|line| !line.starts_with("labels:") && line.starts_with("assignees:"))
+        .map(|&x| x.to_string())
+        .collect::<Vec<String>>();
+
+    let body: Option<String> = match body.len() {
+        0 => None,
+        _ => Some(body.join("\n")),
+    };
+
+    let labels: Vec<String> = read_attribute("labels:", &lines);
+    let assignees: Vec<String> = read_attribute("assignees", &lines);
+
     IssueRequest {
-        title: "A title".to_string(),
-        body: "A body".to_string(),
-        labels: vec!["test".to_string()],
-        assignees: vec![],
+        title: title.to_string(),
+        body: body,
+        labels: labels,
+        assignees: assignees,
     }
+}
+
+fn read_attribute(keyword: &str, lines: &Vec<&str>) -> Vec<String> {
+    let attribute_line: String = lines
+        .iter()
+        .filter(|line| line.starts_with(keyword))
+        .map(|&line| line.to_string())
+        .take(1)
+        .collect::<Vec<String>>()
+        .first()
+        .expect("Should be one line")
+        .clone();
+
+    attribute_line
+        .trim_start_matches(keyword)
+        .split_terminator(",")
+        .map(|value| value.trim().to_string())
+        .collect()
 }
 
 fn list_issues(repo: &String, token: &String) {
@@ -210,7 +243,7 @@ struct Assignee {
 #[derive(Debug, Serialize)]
 struct IssueRequest {
     title: String,
-    body: String,
+    body: Option<String>,
     labels: Vec<String>,
     assignees: Vec<String>,
 }
