@@ -82,17 +82,25 @@ fn read_issue(repo: &String) -> IssueRequest {
         .expect("If you see this message, your system clock is wrong or you are in a Back to The Future movie")
         .as_millis();
 
+    fs::create_dir_all(&path).expect("Unable to create directory");
     path.push(timestamp.to_string());
-
+    println!("{:?}", path);
     let mut file: File = File::create(&path).expect("Could not create file");
+    println!("{:?}", path);
     let result = file.write_all(FILE_CONTENT.as_bytes());
 
-    Command::new("sh")
+    let cmd: String = format!("$(env $EDITOR {:?})", path.to_str().expect("Is not empty"));
+    let execution_result: std::process::ExitStatus = Command::new("sh")
         .arg("-c")
-        .arg("$(env $EDITOR)")
-        .arg(path)
-        .output()
-        .expect("failed to execute process");
+        .arg(cmd)
+        .spawn()
+        .expect("failed to execute process")
+        .wait()
+        .expect("Failed to get exit status");
+
+    if !execution_result.success() {
+        panic!("Editing commit message failed")
+    }
 
     IssueRequest {
         title: "A title".to_string(),
@@ -132,21 +140,30 @@ fn create_issue(repo: &String, token: &String, issue: &IssueRequest) {
 
 fn print_issue(issue: &Issue) {
     let title: String = truncate(issue.title.clone(), 50);
-    let assignees: String = prefix_and_join("@", &issue.assignees);
-    let labels: String =
-        prefix_and_join("#", &issue.labels.iter().map(|x| x.name.clone()).collect());
-    println!("#{} {} | {} | {}", issue.number, title, labels, assignees);
-}
-
-fn prefix_and_join<T: std::marker::Sized>(
-    prefix: &str,
-    vec: &Vec<T>,
-    parse: dyn Fn(&T) -> String,
-) -> String {
-    vec.iter()
-        .map(|s: &T| format!("{}{}", prefix, parse(s)))
+    let assignees: String = issue
+        .assignees
+        .iter()
+        .map(|a: &Assignee| &a.login)
+        .map(|s: &String| format!("{}{}", "@", s))
         .collect::<Vec<String>>()
-        .join(", ")
+        .join(", ");
+
+    let labels: String = issue
+        .labels
+        .iter()
+        .map(|l: &Label| &l.name)
+        .map(|s: &String| format!("{}{}", "#", s))
+        .collect::<Vec<String>>()
+        .join(", ");
+
+    let extra: String = vec![title, assignees, labels]
+        .iter()
+        .filter(|i| !i.is_empty())
+        .map(|s| s.clone())
+        .collect::<Vec<String>>()
+        .join(" | ");
+
+    println!("#{} {}", issue.number, extra);
 }
 
 fn truncate(string: String, max_length: usize) -> String {
@@ -168,7 +185,7 @@ struct Issue {
     updated_at: String,
     state: String,
     comments: u32,
-    assignees: Vec<String>,
+    assignees: Vec<Assignee>,
     labels: Vec<Label>,
 }
 
