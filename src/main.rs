@@ -31,13 +31,7 @@ fn main() {
 }
 
 fn read_token() -> String {
-    let args: Vec<String> = env::args().collect();
-    let token: Option<&String> = args
-        .iter()
-        .skip_while(|i| !i.contains("--token"))
-        .skip(1)
-        .next();
-
+    let token: Option<String> = cmd_read("--token");
     match token {
         Some(t) => t.clone(),
         None => env!("GITHUB_TOKEN").to_string(),
@@ -45,6 +39,14 @@ fn read_token() -> String {
 }
 
 fn read_repo() -> String {
+    let repo_arg: Option<String> = cmd_read("--repo");
+    match repo_arg {
+        Some(repo) => repo,
+        None => read_repo_from_file(),
+    }
+}
+
+fn read_repo_from_file() -> String {
     let file_content: String =
         fs::read_to_string(".git/config").expect("Could not find a git config");
 
@@ -65,6 +67,12 @@ fn read_repo() -> String {
 
 fn cmd_has(key: &str) -> bool {
     env::args().any(|i| i == key)
+}
+
+fn cmd_read(key: &str) -> Option<String> {
+    let args: Vec<String> = env::args().collect();
+    let value: Option<&String> = args.iter().skip_while(|i| !i.contains(key)).skip(1).next();
+    value.cloned()
 }
 
 const FILE_CONTENT: &str = "
