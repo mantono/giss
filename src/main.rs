@@ -1,6 +1,7 @@
 mod cmd;
 mod issue;
 
+use cmd::cmd::Command as carg;
 use cmd::cmd::{cmd_has, cmd_read};
 use issue::issue::{Assignee, Issue, IssueRequest, Label};
 use std::env;
@@ -14,14 +15,21 @@ use std::time::{SystemTime, UNIX_EPOCH};
 const GITHUB_API: &str = "https://api.github.com";
 
 fn main() {
-    let token: String = read_token();
-    let repo: String = read_repo();
-
-    if cmd_has("add") {
-        let read_issue: IssueRequest = read_issue(&repo);
-        create_issue(&repo, &token, &read_issue)
-    } else {
-        list_issues(&repo, &token)
+    match carg::parse() {
+        Some(carg::Add) => {
+            let token: String = read_token();
+            let repo: String = read_repo();
+            let read_issue: IssueRequest = read_issue(&repo);
+            create_issue(&repo, &token, &read_issue)
+        }
+        Some(carg::List) => {
+            let token: String = read_token();
+            let repo: String = read_repo();
+            list_issues(&repo, &token);
+        }
+        Some(carg::Help) => cmd::cmd::print_help_text(),
+        Some(carg::Invalid(invalid_arg)) => cmd::cmd::print_invalid_arg(&invalid_arg),
+        None => cmd::cmd::print_no_arg(),
     }
 }
 
