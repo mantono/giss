@@ -1,8 +1,9 @@
-use serde::Deserialize;
-use serde::Serialize;
+mod cmd;
+mod issue;
 
+use cmd::cmd::{cmd_has, cmd_read};
+use issue::issue::{Assignee, Issue, IssueRequest, Label};
 use std::env;
-use std::env::temp_dir;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
@@ -57,16 +58,6 @@ fn read_repo_from_file() -> String {
         .expect("No match");
 
     repo.trim_end_matches(".git").to_string()
-}
-
-fn cmd_has(key: &str) -> bool {
-    env::args().any(|i| i == key)
-}
-
-fn cmd_read(key: &str) -> Option<String> {
-    let args: Vec<String> = env::args().collect();
-    let value: Option<&String> = args.iter().skip_while(|i| !i.contains(key)).skip(1).next();
-    value.cloned()
 }
 
 const FILE_CONTENT: &str = "
@@ -230,36 +221,4 @@ fn truncate(string: String, max_length: usize) -> String {
     } else {
         string
     }
-}
-
-#[derive(Debug, Deserialize)]
-struct Issue {
-    url: String,
-    id: u64,
-    number: u32,
-    title: String,
-    body: String,
-    updated_at: String,
-    state: String,
-    comments: u32,
-    assignees: Vec<Assignee>,
-    labels: Vec<Label>,
-}
-
-#[derive(Debug, Deserialize)]
-struct Label {
-    name: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct Assignee {
-    login: String,
-}
-
-#[derive(Debug, Serialize)]
-struct IssueRequest {
-    title: String,
-    body: Option<String>,
-    labels: Vec<String>,
-    assignees: Vec<String>,
 }
