@@ -113,17 +113,18 @@ fn read_issue(repo: &String) -> IssueRequest {
     let title: &str = lines.first().expect("Issue was empty");
     let body: Vec<String> = lines
         .iter()
-        .filter(|line| !line.starts_with("labels:") && line.starts_with("assignees:"))
+        .skip(1)
+        .filter(|line| !line.starts_with("labels:") && !line.starts_with("assignees:"))
         .map(|&x| x.to_string())
         .collect::<Vec<String>>();
 
-    let body: Option<String> = match body.len() {
-        0 => None,
-        _ => Some(body.join("\n")),
+    let body: Option<String> = match body.is_empty() {
+        true => None,
+        false => Some(body.join("\n")),
     };
 
     let labels: Vec<String> = read_attribute("labels:", &lines);
-    let assignees: Vec<String> = read_attribute("assignees", &lines);
+    let assignees: Vec<String> = read_attribute("assignees:", &lines);
 
     IssueRequest {
         title: title.to_string(),
@@ -141,7 +142,7 @@ fn read_attribute(keyword: &str, lines: &Vec<&str>) -> Vec<String> {
         .take(1)
         .collect::<Vec<String>>()
         .first()
-        .expect("Should be one line")
+        .unwrap_or(&String::from(""))
         .clone();
 
     attribute_line
@@ -169,6 +170,7 @@ fn list_issues(repo: &String, token: &String) {
 }
 
 fn create_issue(repo: &String, token: &String, issue: &IssueRequest) {
+    println!("Got issue {:?}", issue);
     let url: String = [GITHUB_API, "repos", repo, "issues"].join("/");
     let client = reqwest::Client::new();
     let mut response: reqwest::Response = client
@@ -177,6 +179,20 @@ fn create_issue(repo: &String, token: &String, issue: &IssueRequest) {
         .json(&issue)
         .send()
         .expect("Failed to submit issue");
+
+    if !response.status().is_success() {
+        let body_response: String = response.text().unwrap_or(String::from(""));
+        println!("Error {}: {}", response.status(), body_response);
+    }
+
+    let exit_code: i32 = match response.status().as_u16() {
+        200..=299 => 0,
+        400..=499 => 1,
+        500..=599 => 2,
+        _ => 9,
+    };
+
+    std::process::exit(exit_code);
 }
 
 fn print_issue(issue: &Issue) {
