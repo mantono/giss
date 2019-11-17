@@ -1,8 +1,10 @@
-mod cmd;
+#[macro_use]
+extern crate clap;
+extern crate regex;
+
+mod args;
 mod issue;
 
-use cmd::cmd::Command as carg;
-use cmd::cmd::{cmd_has, cmd_read};
 use issue::issue::{Assignee, Issue, IssueRequest, Label};
 use std::env;
 use std::fs;
@@ -15,64 +17,39 @@ use std::time::{SystemTime, UNIX_EPOCH};
 const GITHUB_API: &str = "https://api.github.com";
 
 fn main() {
-    match carg::parse() {
-        Some(carg::Add) => {
-            let token: String = read_token();
-            let repo: String = read_repo();
-            let read_issue: IssueRequest = read_issue(&repo);
-            create_issue(&repo, &token, &read_issue)
-        }
-        Some(carg::List) => {
-            let token: String = read_token();
-            let repo: String = read_repo();
-            list_issues(&repo, &token);
-        }
-        Some(carg::Help) => cmd::cmd::print_help_text(),
-        Some(carg::Invalid(invalid_arg)) => cmd::cmd::print_invalid_arg(&invalid_arg),
-        None => cmd::cmd::print_no_arg(),
-    }
-}
+    let args: clap::ArgMatches = args::args::parse_args();
+    let action: &str = args.value_of("action").expect("Action must be present");
+    let token: String = args
+        .value_of("token")
+        .expect("No token was present")
+        .to_string();
 
-fn read_token() -> String {
-    let token: Option<String> = cmd_read("--token");
-    match token {
-        Some(t) => t.clone(),
-        None => env!("GITHUB_TOKEN").to_string(),
-    }
-}
-
-fn read_repo() -> String {
-    let repo_arg: Option<String> = cmd_read("--repo");
-    match repo_arg {
-        Some(repo) => repo,
-        None => read_repo_from_file(),
-    }
-}
-
-fn read_repo_from_file() -> String {
-    let file_content: String =
-        fs::read_to_string(".git/config").expect("Could not find a git config");
-
-    let lines: Vec<&str> = file_content
-        .lines()
-        .filter(|f| f.contains("github.com"))
+    let targets: Vec<&str> = args
+        .values_of("target")
+        .expect("Target must be present")
         .collect();
 
-    let repo: &str = lines
+    let target: String = targets
         .first()
-        .expect("No Github repoistory found")
-        .split_terminator(":")
-        .last()
-        .expect("No match");
+        .expect("At least one target must be present")
+        .to_string();
 
-    repo.trim_end_matches(".git").to_string()
+    match action {
+        "create" => {
+            let read_issue: IssueRequest = read_issue(&target);
+            create_issue(&target, &token, &read_issue)
+        }
+        "list" => list_issues(&target, &token),
+        _ => panic!("This should never happen"),
+    }
 }
 
 const FILE_CONTENT: &str = "
 # Insert title and body above for issue. First line will automatically be interpreted
 # as the title of the subject and following lines will be the body of the issue.
 # Optionally, labels can be added with `labels: duplicate, jar, my-favourite-label` on a separate
-# line and assginees with `assignees: @assignedperson, @some-other-poor-fellow`.
+# line and assginees with `assignees: @assignedperson, @some-other-poor-fellow`. Lines
+# that starts with a '#' will be ignored.
 ";
 
 fn read_issue(repo: &String) -> IssueRequest {
