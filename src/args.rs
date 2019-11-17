@@ -10,7 +10,7 @@ pub mod args {
             .long_help("Choose whether to list issues or create a new one.")
             .possible_values(&["list", "create"]);
 
-        //let current_repo: String = read_repo_from_file();
+        let current_repo: String = read_repo_from_file();
         let target_regex = Regex::new(r"^[\w\-]+(/[\w\-_\.]+)?$").unwrap();
         let target = Arg::with_name("target")
         .takes_value(true)
@@ -24,7 +24,7 @@ pub mod args {
                 Err(format!("Invalid target pattern: '{}'", i))
             }
         })
-        .default_value(&read_repo_from_file());
+        .default_value(&current_repo);
 
         let token = Arg::with_name("token")
             .takes_value(true)
