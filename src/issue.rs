@@ -9,7 +9,7 @@ pub mod issue {
         pub id: u64,
         pub number: u32,
         pub title: String,
-        pub body: String,
+        pub body: Option<String>,
         pub updated_at: String,
         pub state: String,
         pub comments: u32,
