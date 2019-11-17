@@ -17,7 +17,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 const GITHUB_API: &str = "https://api.github.com";
 
 fn main() {
-    let args: clap::ArgMatches = args::args::parse_args();
+    let current_repo: String = args::args::read_repo_from_file();
+    let args: clap::ArgMatches = args::args::parse_args(&current_repo);
     let action: &str = args.value_of("action").expect("Action must be present");
     let token: String = args
         .value_of("token")

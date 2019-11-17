@@ -3,14 +3,13 @@ pub mod args {
     use regex::Regex;
     use std::fs;
 
-    pub fn parse_args() -> ArgMatches<'static> {
+    pub fn parse_args<'a>(current_repo: &'a str) -> ArgMatches<'a> {
         let action = Arg::with_name("action")
             .default_value("list")
             .help("Action to take")
             .long_help("Choose whether to list issues or create a new one.")
             .possible_values(&["list", "create"]);
 
-        let current_repo: String = read_repo_from_file();
         let target_regex = Regex::new(r"^[\w\-]+(/[\w\-_\.]+)?$").unwrap();
         let target = Arg::with_name("target")
         .takes_value(true)
@@ -77,7 +76,7 @@ pub mod args {
         args
     }
 
-    fn read_repo_from_file() -> String {
+    pub fn read_repo_from_file() -> String {
         let file_content: String =
             fs::read_to_string(".git/config").expect("Could not find a git config");
         let lines: Vec<&str> = file_content
