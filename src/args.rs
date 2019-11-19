@@ -39,6 +39,14 @@ pub mod args {
             .help("Filter issues assigned to user")
             .long_help("Only include issues assigned to user");
 
+        let limit = Arg::with_name("limit")
+            .takes_value(true)
+            .long("limit")
+            .short("n")
+            .help("Limit the number of issues listed")
+            .long_help("Limit how many issues that should be listed")
+            .default_value("10");
+
         let state = Arg::with_name("state")
         .long("state")
         .short("s")
@@ -68,6 +76,7 @@ pub mod args {
             .arg(token)
             .arg(target)
             .arg(assigned)
+            .arg(limit)
             .arg(state)
             .arg(pull_requests)
             .arg(review_requests)
