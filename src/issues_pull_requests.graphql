@@ -1,0 +1,52 @@
+query UserIssues($pullRequestState: [PullRequestState!], $issueState: [IssueState!], $amount: Int){
+    user(login: "mantono") {
+        pullRequests(states: $pullRequestState, first: $amount, orderBy: {field: UPDATED_AT, direction: DESC}) {
+            nodes {
+                number
+                title
+                body
+                state
+                repository {
+                    owner {
+                        login
+                    }
+                    name
+                }
+                assignees(first: 10) {
+                    nodes {
+                        login
+                    }
+                }
+                labels(first: 10) {
+                    nodes {
+                        name
+                    }
+                }
+            }
+        }
+        issues(states: $issueState, first: $amount, orderBy: {field: UPDATED_AT, direction: DESC}) {
+            nodes {
+                number
+                title
+                body
+                state
+                repository {
+                    owner {
+                        login
+                    }
+                    name
+                }
+                assignees(first: 10) {
+                    nodes {
+                        login
+                    }
+                }
+                labels(first: 10) {
+                    nodes {
+                        name
+                    }
+                }
+            }
+        }
+    }
+}
