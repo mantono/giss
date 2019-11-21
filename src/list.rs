@@ -1,5 +1,6 @@
 pub mod list {
 
+    use crate::github_resources::ghrs;
     use crate::issue::issue::{Assignee, Issue, IssueRequest, Label};
 
     pub struct FilterConfig {
@@ -47,7 +48,7 @@ pub mod list {
         let issues: Vec<Issue> = response.json().expect("Unable to process body in response");
         issues
             .iter()
-            .filter(|i| i.state == "open")
+            .filter(|i| i.state == ghrs::State::Open)
             .for_each(print_issue);
     }
     fn list_issues_org(org: &str, token: &String, config: &FilterConfig) {

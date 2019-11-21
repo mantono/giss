@@ -4,6 +4,7 @@ extern crate regex;
 
 mod args;
 mod create;
+mod github_resources;
 mod issue;
 mod list;
 
