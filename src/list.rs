@@ -2,6 +2,7 @@ pub mod list {
 
     use crate::github_resources::ghrs;
     use crate::issue::issue::{Assignee, Issue, IssueRequest, Label};
+    use crate::Target;
 
     pub struct FilterConfig {
         assigned_only: bool,
@@ -19,7 +20,7 @@ pub mod list {
         }
     }
 
-    pub fn list_issues(targets: &Vec<&str>, token: &String, config: &FilterConfig) {
+    pub fn list_issues(targets: &Vec<Target>, token: &String, config: &FilterConfig) {
         match targets.len() {
             0 => panic!("No target found"),
             1 => {
