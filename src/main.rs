@@ -44,7 +44,8 @@ fn main() {
             create_issue(&target, &token, &read_issue)
         }
         "list" => {
-            let targets: Vec<Target> = reduce_targets(targets);
+            let targets: Vec<Target> =
+                validate_targets(targets).expect("Must have valid target(s)");
             let config = FilterConfig::from_args(&args);
             list_issues(&targets, &token, &config)
         }
@@ -86,25 +87,42 @@ impl Target {
     }
 }
 
-fn reduce_targets(targets: Vec<&str>) -> Vec<Target> {
+impl Clone for Target {
+    fn clone(&self) -> Target {
+        match self {
+            Target::Organization { name } => Target::Organization { name: name.clone() },
+            Target::Repository { owner, name } => Target::Repository {
+                owner: owner.clone(),
+                name: name.clone(),
+            },
+        }
+    }
+}
+
+fn validate_targets(targets: Vec<&str>) -> Result<Vec<Target>, &str> {
     let targets: Vec<Target> = targets.iter().unique().map(|t| Target::new(t)).collect();
-    let orgs: Vec<&Target> = targets.iter().filter(|t| !t.is_repo()).collect();
 
-    targets
+    let orgs: Vec<Target> = targets
         .iter()
-        .filter(|t0: Target| keep_target(&orgs, &t0))
-        .collect()
-}
+        .filter(|t| !t.is_repo())
+        .map(|t| t.clone())
+        .collect();
 
-fn keep_target(orgs: &Vec<&Target>, target: &Target) -> bool {
-    !orgs.iter().any(|t| reduce(t, target))
-}
+    let repos: Vec<Target> = targets
+        .iter()
+        .filter(|t| t.is_repo())
+        .map(|t| t.clone())
+        .collect();
 
-fn reduce(t0: &Target, t1: &Target) -> bool {
-    match (t0, t1) {
-        (Org { .. }, Org { .. }) => false,
-        (Org { name }, Repo { owner, .. }) => name == owner,
-        (Repo { owner, .. }, Org { name }) => name == owner,
-        (Repo { .. }, Repo { .. }) => false,
+    if targets.is_empty() {
+        Result::Err("No targets specified")
+    } else if !orgs.is_empty() && !repos.is_empty() {
+        Result::Err("Cannot give organizations and repositories at the same time")
+    } else if repos.len() > 1 {
+        Result::Err("Cannot give multiple repositories")
+    } else if !orgs.is_empty() {
+        Ok(orgs)
+    } else {
+        Ok(repos)
     }
 }

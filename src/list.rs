@@ -30,16 +30,15 @@ pub mod list {
         }
     }
 
-    fn list_issues_for_target(target: &str, token: &String, config: &FilterConfig) {
-        if target.contains("/") {
-            list_issues_repo(target, token, config)
-        } else {
-            list_issues_org(target, token, config)
+    fn list_issues_for_target(target: &Target, token: &String, config: &FilterConfig) {
+        match target {
+            Target::Repository { owner, name } => list_issues_repo(owner, name, token, config),
+            Target::Organization { name } => list_issues_org(name, token, config),
         }
     }
 
-    fn list_issues_repo(repo: &str, token: &String, config: &FilterConfig) {
-        let url: String = [crate::GITHUB_API, "repos", repo, "issues"].join("/");
+    fn list_issues_repo(org: &String, repo: &String, token: &String, config: &FilterConfig) {
+        let url: String = [crate::GITHUB_API, "repos", org, repo, "issues"].join("/");
         let client = reqwest::Client::new();
         let mut response: reqwest::Response = client
             .get(&url)
@@ -52,10 +51,10 @@ pub mod list {
             .filter(|i| i.state == ghrs::State::Open)
             .for_each(print_issue);
     }
-    fn list_issues_org(org: &str, token: &String, config: &FilterConfig) {
+    fn list_issues_org(org: &String, token: &String, config: &FilterConfig) {
         // Retrieve all issues for organization here
     }
-    fn list_issues_for_targets(targets: &Vec<&str>, token: &String, config: &FilterConfig) {
+    fn list_issues_for_targets(targets: &Vec<Target>, token: &String, config: &FilterConfig) {
         // Resolve targets, for example filter out individual repo if parent organization is presnet
     }
 
