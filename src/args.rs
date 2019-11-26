@@ -56,6 +56,34 @@ pub mod args {
             .help("Filter issues by state")
             .long_help("Filter issues and pull request on whether they are in state open or closed, or choose to include all regardless of current state.");
 
+        let open = Arg::with_name("open")
+            .long("open")
+            .short("o")
+            .conflicts_with("closed")
+            .conflicts_with("all")
+            .help("Only show open issues and pull requests")
+            .long_help(
+                "Only show issues and pull requests in state open. This is enabled by default",
+            );
+
+        let closed = Arg::with_name("closed")
+            .long("closed")
+            .short("c")
+            .conflicts_with("open")
+            .conflicts_with("all")
+            .help("Only show closed issues and pull requests")
+            .long_help("Only show issues and pull requests in state closed");
+
+        let all = Arg::with_name("all")
+            .long("all")
+            .short("A")
+            .conflicts_with("open")
+            .conflicts_with("closed")
+            .help("Show all issues and pull requests, regardless of state")
+            .long_help(
+                "Show all issues and pull requests and do not filter by open or closed state",
+            );
+
         let pull_requests = Arg::with_name("pull requests")
             .long("pull-requests")
             .short("p")
@@ -77,7 +105,9 @@ pub mod args {
             .arg(target)
             .arg(assigned)
             .arg(limit)
-            .arg(state)
+            .arg(open)
+            .arg(closed)
+            .arg(all)
             .arg(pull_requests)
             .arg(review_requests)
             .get_matches();

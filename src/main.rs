@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate clap;
+extern crate dirs;
 extern crate regex;
 
 mod args;
@@ -83,6 +84,19 @@ impl Target {
         match self {
             Target::Organization { .. } => false,
             Target::Repository { .. } => true,
+        }
+    }
+
+    fn as_repo(&self) -> Option<(String, String)> {
+        match self {
+            Target::Organization { .. } => None,
+            Target::Repository { owner, name } => Some((owner.clone(), name.clone())),
+        }
+    }
+    fn as_org(&self) -> Option<String> {
+        match self {
+            Target::Organization { name } => Some(name.clone()),
+            Target::Repository { .. } => None,
         }
     }
 }
