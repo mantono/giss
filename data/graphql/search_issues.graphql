@@ -1,0 +1,30 @@
+query UserIssues($searchQuery: String!, $limit: Int) {
+    search(query: $searchQuery, type: ISSUE, first: $limit) {
+        edges {
+            node {
+                ... on Issue {
+                    id
+                    title
+                    url
+                    state
+                    updatedAt
+                    createdAt
+                    labels(first: 10) {
+                        nodes {
+                                name
+                        }
+                    }
+                    repository {
+                        nameWithOwner
+                    }
+                    comments {
+                        totalCount
+                    }
+                    reactions {
+                        totalCount
+                    }
+                }
+            }
+        }
+    }
+}
