@@ -8,6 +8,7 @@ mod create;
 mod github_resources;
 mod issue;
 mod list;
+mod search_query;
 
 use args::args::{parse_args, read_repo_from_file};
 use create::create::{create_issue, read_issue};

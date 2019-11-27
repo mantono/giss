@@ -40,7 +40,7 @@ pub mod list {
     }
 
     #[derive(Eq, PartialEq, Debug)]
-    enum FilterState {
+    pub enum FilterState {
         Open,
         Closed,
         All,
