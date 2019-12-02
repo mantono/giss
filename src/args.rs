@@ -61,9 +61,9 @@ pub mod args {
             .short("o")
             .conflicts_with("closed")
             .conflicts_with("all")
-            .help("Only show open issues and pull requests")
+            .help("Only show open issues and pull queries")
             .long_help(
-                "Only show issues and pull requests in state open. This is enabled by default",
+                "Only show issues and pull queries in state open. This is enabled by default",
             );
 
         let closed = Arg::with_name("closed")
@@ -71,30 +71,30 @@ pub mod args {
             .short("c")
             .conflicts_with("open")
             .conflicts_with("all")
-            .help("Only show closed issues and pull requests")
-            .long_help("Only show issues and pull requests in state closed");
+            .help("Only show closed issues and pull queries")
+            .long_help("Only show issues and pull queries in state closed");
 
         let all = Arg::with_name("all")
             .long("all")
             .short("A")
             .conflicts_with("open")
             .conflicts_with("closed")
-            .help("Show all issues and pull requests, regardless of state")
+            .help("Show all issues and pull queries, regardless of state")
             .long_help(
-                "Show all issues and pull requests and do not filter by open or closed state",
+                "Show all issues and pull queries and do not filter by open or closed state",
             );
 
-        let pull_requests = Arg::with_name("pull requests")
-            .long("pull-requests")
+        let pull_requests = Arg::with_name("pull queries")
+            .long("pull-queries")
             .short("p")
-            .help("Include assigned pull requests")
-            .long_help("List pull requests in addition to issues.");
+            .help("Include assigned pull queries")
+            .long_help("List pull queries in addition to issues.");
 
-        let review_requests = Arg::with_name("review requests")
-            .long("review-requests")
+        let review_requests = Arg::with_name("review queries")
+            .long("review-queries")
             .short("r")
-            .help("Include requests for review")
-            .long_help("List requests for review in addition to issues.");
+            .help("Include queries for review")
+            .long_help("List queries for review in addition to issues.");
 
         let args: ArgMatches = App::new(crate_name!())
             .about("Command line tool for listing and creating GitHub issues")

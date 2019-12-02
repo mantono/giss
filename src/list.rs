@@ -4,9 +4,11 @@ pub mod list {
     use crate::issue::issue::{Assignee, Issue, IssueRequest, Label};
     use crate::Target;
     use core::fmt;
-    use itertools::Itertools;
+    use graphql_client::{GraphQLQuery, QueryBody, Response};
+    use itertools::{all, Itertools};
     use serde::private::ser::constrain;
     use serde::Deserialize;
+    use serde_json::json;
     use sha2::{Digest, Sha256};
     use std::collections::HashMap;
     use std::fs::File;
@@ -32,8 +34,8 @@ pub mod list {
             };
             FilterConfig {
                 assigned_only: args.is_present("assigned"),
-                pull_requests: args.is_present("pull requests"),
-                review_requests: args.is_present("review requests"),
+                pull_requests: args.is_present("pull queries"),
+                review_requests: args.is_present("review queries"),
                 state,
             }
         }
@@ -75,6 +77,31 @@ pub mod list {
     fn list_issues_targets(target: &Vec<Target>, token: &String, config: &FilterConfig) {
         let orgs: Vec<String> = target.iter().filter_map(|t| t.as_org()).collect();
         list_issues_orgs(&orgs, token, config)
+    }
+
+    #[derive(GraphQLQuery, Debug)]
+    #[graphql(
+        schema_path = "data/graphql/schema/schema.public.graphql",
+        query_path = "data/graphql/queries/search_issues.graphql"
+    )]
+    struct SearchIssues;
+
+    #[derive(GraphQLQuery, Debug)]
+    #[graphql(
+        schema_path = "data/graphql/schema/schema.public.graphql",
+        query_path = "data/graphql/queries/search_pull_requests.graphql",
+        response_derives = "Debug"
+    )]
+    struct SearchPullRequests;
+
+    #[derive(Deserialize, Debug)]
+    pub struct DateTime {
+        timestamp: String,
+    }
+
+    #[derive(Deserialize, Debug)]
+    pub struct URI {
+        uri: String,
     }
 
     #[derive(Deserialize)]
@@ -175,8 +202,47 @@ pub mod list {
         issues.iter().for_each(print_issue);
     }
 
+    const GITHUB_API_V4_URL: &str = "https://api.github.com/graphql";
+
     fn list_issues_orgs(targets: &Vec<String>, token: &String, config: &FilterConfig) {
-        println!("{:?}", targets)
+        //        SearchIssues::
+        //        let body: &str = include_str!("data/graphql/search_pull_requests.graphql");
+        //        let client = reqwest::Client::new();
+        //        let mut resposne: reqwest::Response = client
+        //            .get(&url)
+        //            .bearer_auth(token)
+        //            .body()
+        let variables = search_issues::Variables {
+            search_query: build_search_query_issues(&String::from("mantono"), targets, config),
+            limit: Some(10),
+        };
+        let search: QueryBody<_> = SearchIssues::build_query(variables);
+        println!("{:?}", targets);
+        let client = reqwest::Client::new();
+        let mut response: reqwest::Response = client
+            .get(GITHUB_API_V4_URL)
+            .bearer_auth(token)
+            .json(&search)
+            .send()
+            .expect("Request failed to GitHub v4 API");
+
+        println!("{:?}", response);
+        println!(
+            "{}, {}, {:?}",
+            search.operation_name, search.query, variables
+        );
+    }
+
+    fn build_search_query_issues(
+        user: &String,
+        targets: &Vec<String>,
+        config: &FilterConfig,
+    ) -> String {
+        let all_targets: String = targets.iter().map(|t| format!("user:{}", t)).join(" ");
+        format!(
+            "assignee:{} type:issue archived:false {} sort:updatedAt-desc",
+            user, all_targets
+        )
     }
 
     fn print_issue(issue: &Issue) {

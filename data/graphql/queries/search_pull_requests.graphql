@@ -1,7 +1,8 @@
-query UserPullRequest($searchQuery: String!, $limit: Int) {
+query SearchPullRequests($searchQuery: String!, $limit: Int) {
     search(query: $searchQuery, type: ISSUE, first: $limit) {
         edges {
             node {
+                __typename
                 ... on PullRequest {
                     id
                     title

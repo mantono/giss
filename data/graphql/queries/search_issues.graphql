@@ -1,7 +1,8 @@
-query UserIssues($searchQuery: String!, $limit: Int) {
+query SearchIssues($searchQuery: String!, $limit: Int) {
     search(query: $searchQuery, type: ISSUE, first: $limit) {
         edges {
             node {
+                __typename
                 ... on Issue {
                     id
                     title
@@ -11,7 +12,7 @@ query UserIssues($searchQuery: String!, $limit: Int) {
                     createdAt
                     labels(first: 10) {
                         nodes {
-                                name
+                            name
                         }
                     }
                     repository {
