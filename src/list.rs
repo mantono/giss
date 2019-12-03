@@ -1,7 +1,7 @@
 pub mod list {
 
     use crate::github_resources::ghrs;
-    use crate::issue::issue::{Assignee, Issue, IssueRequest, Label};
+    use crate::issue::issue::{Assignee, Data, Issue, IssueRequest, Label, Root};
     use crate::search_query::search::{GraphQLQuery, SearchIssues, SearchQuery, Sorting};
     use crate::user::usr;
     use crate::Target;
@@ -9,8 +9,10 @@ pub mod list {
     use itertools::{all, Itertools};
     use serde::private::ser::constrain;
     use serde::Deserialize;
-    use serde_json::json;
+    use serde_json::{json, Value};
     use std::collections::HashMap;
+    use std::error::Error;
+    use std::panic::resume_unwind;
 
     pub struct FilterConfig {
         assigned_only: bool,
@@ -117,7 +119,7 @@ pub mod list {
             .send()
             .expect("Request to Github API failed");
         let issues: Vec<Issue> = response.json().expect("Unable to process body in response");
-        issues.iter().for_each(print_issue);
+        issues.iter().for_each(|i| print_issue(&i, false));
     }
 
     const GITHUB_API_V4_URL: &str = "https://api.github.com/graphql";
@@ -152,44 +154,43 @@ pub mod list {
             .execute(request)
             .expect("Request failed to GitHub v4 API");
 
-        println!("{:?}", response.text());
-        //        println!(
-        //            "{}, {}, {:?}",
-        //            query.query, query.operation_name, query.variables
-        //        );
+        let issues: Root = response.json().expect("Unable to parse body as JSON");
+        print_issues(issues, true);
     }
 
-    fn build_search_query_issues(
-        user: &String,
-        targets: &Vec<String>,
-        config: &FilterConfig,
-    ) -> String {
-        let all_targets: String = targets.iter().map(|t| format!("user:{}", t)).join(" ");
-        format!(
-            "assignee:{} type:issue archived:false {} sort:updatedAt-desc",
-            user, all_targets
-        )
+    fn print_issues(root: Root, print_repo: bool) {
+        for node in root.data.search.edges {
+            print_issue(&node.node, print_repo)
+        }
     }
 
-    fn print_issue(issue: &Issue) {
+    fn print_issue(issue: &Issue, print_repo: bool) {
         let title: String = truncate(issue.title.clone(), 50);
         let assignees: String = issue
             .assignees
+            .nodes
             .iter()
             .map(|a: &Assignee| &a.login)
             .map(|s: &String| format!("{}{}", "@", s))
             .collect::<Vec<String>>()
             .join(", ");
 
+        let repo: String = if print_repo {
+            issue.repository.name_with_owner.clone()
+        } else {
+            String::from("")
+        };
+
         let labels: String = issue
             .labels
+            .nodes
             .iter()
             .map(|l: &Label| &l.name)
             .map(|s: &String| format!("{}{}", "#", s))
             .collect::<Vec<String>>()
             .join(", ");
 
-        let extra: String = vec![title, assignees, labels]
+        let extra: String = vec![repo, title, assignees, labels]
             .iter()
             .filter(|i| !i.is_empty())
             .map(|s| s.clone())

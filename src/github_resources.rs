@@ -4,8 +4,10 @@ pub mod ghrs {
     #[derive(Debug, Deserialize, PartialEq)]
     pub enum State {
         #[serde(rename(deserialize = "open"))]
+        #[serde(alias = "OPEN")]
         Open,
         #[serde(rename(deserialize = "closed"))]
+        #[serde(alias = "CLOSED")]
         Closed,
     }
 

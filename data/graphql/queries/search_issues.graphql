@@ -4,12 +4,18 @@ query SearchIssues($searchQuery: String!, $limit: Int) {
             node {
                 __typename
                 ... on Issue {
-                    id
+                    databaseId
+                    number
                     title
                     url
                     state
                     updatedAt
                     createdAt
+                    assignees(first: 10) {
+                        nodes {
+                            login
+                        }
+                    }
                     labels(first: 10) {
                         nodes {
                             name
