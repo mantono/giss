@@ -1,6 +1,6 @@
 pub mod create {
     use crate::issue::issue::IssueRequest;
-    use crate::GITHUB_API;
+    use crate::GITHUB_API_V3_URL;
     use std::env;
     use std::fs;
     use std::fs::File;
@@ -68,9 +68,9 @@ pub mod create {
 
         IssueRequest {
             title: title.to_string(),
-            body: body,
-            labels: labels,
-            assignees: assignees,
+            body,
+            labels,
+            assignees,
         }
     }
 
@@ -94,7 +94,7 @@ pub mod create {
 
     pub fn create_issue(repo: &String, token: &String, issue: &IssueRequest) {
         println!("Got issue {:?}", issue);
-        let url: String = [GITHUB_API, "repos", repo, "issues"].join("/");
+        let url: String = [GITHUB_API_V3_URL, "repos", repo, "issues"].join("/");
         let client = reqwest::Client::new();
         let mut response: reqwest::Response = client
             .post(&url)

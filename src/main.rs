@@ -9,6 +9,7 @@ mod github_resources;
 mod issue;
 mod list;
 mod search_query;
+mod user;
 
 use args::args::{parse_args, read_repo_from_file};
 use create::create::{create_issue, read_issue};
@@ -16,7 +17,7 @@ use issue::issue::IssueRequest;
 use itertools::Itertools;
 use list::list::{list_issues, FilterConfig};
 
-const GITHUB_API: &str = "https://api.github.com";
+const GITHUB_API_V3_URL: &str = "https://api.github.com";
 
 fn main() {
     let current_repo: String = read_repo_from_file();
@@ -48,8 +49,9 @@ fn main() {
         "list" => {
             let targets: Vec<Target> =
                 validate_targets(targets).expect("Must have valid target(s)");
+            let user: String = fetch_username(&token);
             let config = FilterConfig::from_args(&args);
-            list_issues(&targets, &token, &config)
+            list_issues(&user, &targets, &token, &config)
         }
         _ => panic!("This should never happen"),
     }
@@ -60,6 +62,7 @@ pub enum Target {
     Repository { owner: String, name: String },
 }
 
+use crate::user::usr::fetch_username;
 use Target::Organization as Org;
 use Target::Repository as Repo;
 

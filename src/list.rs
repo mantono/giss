@@ -2,19 +2,15 @@ pub mod list {
 
     use crate::github_resources::ghrs;
     use crate::issue::issue::{Assignee, Issue, IssueRequest, Label};
+    use crate::search_query::search::{GraphQLQuery, SearchIssues, SearchQuery, Sorting};
+    use crate::user::usr;
     use crate::Target;
     use core::fmt;
-    use graphql_client::{GraphQLQuery, QueryBody, Response};
     use itertools::{all, Itertools};
     use serde::private::ser::constrain;
     use serde::Deserialize;
     use serde_json::json;
-    use sha2::{Digest, Sha256};
     use std::collections::HashMap;
-    use std::fs::File;
-    use std::io::Write;
-    use std::path::PathBuf;
-    use std::ptr::hash;
 
     pub struct FilterConfig {
         assigned_only: bool,
@@ -41,7 +37,7 @@ pub mod list {
         }
     }
 
-    #[derive(Eq, PartialEq, Debug)]
+    #[derive(Eq, PartialEq, Debug, Copy, Clone)]
     pub enum FilterState {
         Open,
         Closed,
@@ -59,7 +55,12 @@ pub mod list {
         }
     }
 
-    pub fn list_issues(targets: &Vec<Target>, token: &String, config: &FilterConfig) {
+    pub fn list_issues(
+        user: &String,
+        targets: &Vec<Target>,
+        token: &String,
+        config: &FilterConfig,
+    ) {
         match targets.len() {
             0 => panic!("No target found"),
             1 => {
@@ -67,108 +68,25 @@ pub mod list {
                 if let Target::Repository { name, owner } = target {
                     list_issues_repo(owner, name, token, config)
                 } else {
-                    list_issues_targets(targets, token, config)
+                    list_issues_targets(user, targets, token, config)
                 }
             }
-            _ => list_issues_targets(targets, token, config),
+            _ => list_issues_targets(user, targets, token, config),
         }
     }
 
-    fn list_issues_targets(target: &Vec<Target>, token: &String, config: &FilterConfig) {
+    fn list_issues_targets(
+        user: &String,
+        target: &Vec<Target>,
+        token: &String,
+        config: &FilterConfig,
+    ) {
         let orgs: Vec<String> = target.iter().filter_map(|t| t.as_org()).collect();
-        list_issues_orgs(&orgs, token, config)
-    }
-
-    #[derive(GraphQLQuery, Debug)]
-    #[graphql(
-        schema_path = "data/graphql/schema/schema.public.graphql",
-        query_path = "data/graphql/queries/search_issues.graphql"
-    )]
-    struct SearchIssues;
-
-    #[derive(GraphQLQuery, Debug)]
-    #[graphql(
-        schema_path = "data/graphql/schema/schema.public.graphql",
-        query_path = "data/graphql/queries/search_pull_requests.graphql",
-        response_derives = "Debug"
-    )]
-    struct SearchPullRequests;
-
-    #[derive(Deserialize, Debug)]
-    pub struct DateTime {
-        timestamp: String,
-    }
-
-    #[derive(Deserialize, Debug)]
-    pub struct URI {
-        uri: String,
-    }
-
-    #[derive(Deserialize)]
-    struct User {
-        login: String,
-    }
-
-    fn fetch_username(token: &String) -> String {
-        match get_saved_username(token) {
-            Some(username) => username,
-            None => {
-                let username: String = api_lookup_username(token);
-                save_username(token, &username).expect("Unable to save username");
-                username
-            }
-        }
-    }
-
-    fn save_username(token: &String, username: &String) -> Result<(), std::io::Error> {
-        let token_hash: String = hash_token(token);
-        let mut path: PathBuf = get_users_dir();
-        std::fs::create_dir_all(&path).expect("Unable to create path");
-        path.push(token_hash);
-        let mut file: File = File::create(&path).expect("Unable to create file");
-        file.write_all(username.as_bytes())
-    }
-
-    fn api_lookup_username(token: &String) -> String {
-        let client = reqwest::Client::new();
-        let mut response: reqwest::Response = client
-            .get("https://api.github.com/user")
-            .bearer_auth(token)
-            .send()
-            .expect("Request to Github API failed when fetching user name");
-
-        response
-            .json::<User>()
-            .expect("Unable to parse GitHub user")
-            .login
-    }
-
-    fn hash_token(token: &String) -> String {
-        let mut hasher = Sha256::new();
-        hasher.input(token);
-        format!("{:02x}", hasher.result().as_slice().iter().format(""))
-    }
-
-    fn get_users_dir() -> PathBuf {
-        let mut path: PathBuf = dirs::home_dir().expect("Cannot find home dir");
-        path.push([".config", "giss", "usernames"].join("/"));
-        path
-    }
-
-    fn get_saved_username(token: &String) -> Option<String> {
-        let token_hash: String = hash_token(token);
-        let mut path: PathBuf = get_users_dir();
-        path.push(token_hash);
-        if path.exists() {
-            let content = std::fs::read_to_string(path).expect("Unable to read content of file");
-            Some(content)
-        } else {
-            None
-        }
+        list_issues_orgs(user, &orgs, token, config)
     }
 
     fn list_issues_repo(org: &String, repo: &String, token: &String, config: &FilterConfig) {
-        let mut url: String = [crate::GITHUB_API, "repos", org, repo, "issues?"].join("/");
+        let mut url: String = [crate::GITHUB_API_V3_URL, "repos", org, repo, "issues?"].join("/");
 
         let mut query_parameters: Vec<(String, String)> = vec![
             ("state".to_string(), config.state.to_string()),
@@ -177,7 +95,7 @@ pub mod list {
         ];
 
         if config.assigned_only {
-            query_parameters.push(("assignee".to_string(), fetch_username(token)))
+            query_parameters.push(("assignee".to_string(), usr::fetch_username(token)))
         }
 
         let query_parameters: String = query_parameters
@@ -204,33 +122,41 @@ pub mod list {
 
     const GITHUB_API_V4_URL: &str = "https://api.github.com/graphql";
 
-    fn list_issues_orgs(targets: &Vec<String>, token: &String, config: &FilterConfig) {
-        //        SearchIssues::
-        //        let body: &str = include_str!("data/graphql/search_pull_requests.graphql");
-        //        let client = reqwest::Client::new();
-        //        let mut resposne: reqwest::Response = client
-        //            .get(&url)
-        //            .bearer_auth(token)
-        //            .body()
-        let variables = search_issues::Variables {
-            search_query: build_search_query_issues(&String::from("mantono"), targets, config),
-            limit: Some(10),
+    fn list_issues_orgs(
+        user: &String,
+        targets: &Vec<String>,
+        token: &String,
+        config: &FilterConfig,
+    ) {
+        let query: SearchIssues = SearchIssues {
+            archived: false,
+            assignee: if config.assigned_only {
+                Some(user.clone())
+            } else {
+                None
+            },
+            sort: (String::from("updatedAt"), Sorting::Descending),
+            state: config.state.clone(),
+            users: targets.clone(),
         };
-        let search: QueryBody<_> = SearchIssues::build_query(variables);
-        println!("{:?}", targets);
+        let query: GraphQLQuery = query.build();
         let client = reqwest::Client::new();
-        let mut response: reqwest::Response = client
-            .get(GITHUB_API_V4_URL)
+        let request: reqwest::Request = client
+            .post(GITHUB_API_V4_URL)
             .bearer_auth(token)
-            .json(&search)
-            .send()
+            .json(&query)
+            .build()
+            .expect("Failed to build query");
+
+        let mut response: reqwest::Response = client
+            .execute(request)
             .expect("Request failed to GitHub v4 API");
 
-        println!("{:?}", response);
-        println!(
-            "{}, {}, {:?}",
-            search.operation_name, search.query, variables
-        );
+        println!("{:?}", response.text());
+        //        println!(
+        //            "{}, {}, {:?}",
+        //            query.query, query.operation_name, query.variables
+        //        );
     }
 
     fn build_search_query_issues(
