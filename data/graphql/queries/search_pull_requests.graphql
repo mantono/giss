@@ -1,0 +1,37 @@
+query SearchPullRequests($searchQuery: String!, $limit: Int) {
+    search(query: $searchQuery, type: ISSUE, first: $limit) {
+        edges {
+            node {
+                __typename
+                ... on PullRequest {
+                    databaseId
+                    number
+                    title
+                    url
+                    state
+                    updatedAt
+                    createdAt
+                    assignees(first: 10) {
+                        nodes {
+                            login
+                        }
+                    }
+                    labels(first: 10) {
+                        nodes {
+                            name
+                        }
+                    }
+                    repository {
+                        nameWithOwner
+                    }
+                    comments {
+                        totalCount
+                    }
+                    reactions {
+                        totalCount
+                    }
+                }
+            }
+        }
+    }
+}

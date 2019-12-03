@@ -12,18 +12,18 @@ pub mod args {
 
         let target_regex = Regex::new(r"^[\w\-]+(/[\w\-_\.]+)?$").unwrap();
         let target = Arg::with_name("target")
-        .takes_value(true)
-        .multiple(true)
-        .help("Name of target(s)")
-        .long_help("Name of the targets for the action. Can be one or multiple organizations, owners or repositories. Any repository specified must be qualified with the owner or organization name. For example 'org/repo0 org/repo1 other-org'. If action is 'create' then only one target will be accepted. When no target is specified, repositorty in current directory will be used, if possible.")
-        .validator(move |i| {
-            if target_regex.is_match(&i) {
-                Ok(())
-            } else {
-                Err(format!("Invalid target pattern: '{}'", i))
-            }
-        })
-        .default_value(&current_repo);
+            .takes_value(true)
+            .multiple(true)
+            .help("Name of target(s)")
+            .long_help("Name of the targets for the action. Can be either a single repository or one or multiple organizations or owners. Any repository specified must be qualified with the owner or organization name. For example 'org/repo'. If action is 'create' then only a repository will be accepted. When no target is specified, repository in current directory will be used, if possible.")
+            .validator(move |i| {
+                if target_regex.is_match(&i) {
+                    Ok(())
+                } else {
+                    Err(format!("Invalid target pattern: '{}'", i))
+                }
+            })
+            .default_value(&current_repo);
 
         let token = Arg::with_name("token")
             .takes_value(true)
@@ -47,14 +47,33 @@ pub mod args {
             .long_help("Limit how many issues that should be listed")
             .default_value("10");
 
-        let state = Arg::with_name("state")
-        .long("state")
-        .short("s")
-        .takes_value(true)
-        .default_value("open")
-        .possible_values(&["open", "closed", "all"])
-        .help("Filter issues by state")
-        .long_help("Filter issues and pull request on whether they are in state open or closed, or choose to include all regardless of current state.");
+        let open = Arg::with_name("open")
+            .long("open")
+            .short("o")
+            .conflicts_with("closed")
+            .conflicts_with("all")
+            .help("Only show open issues and pull requests")
+            .long_help(
+                "Only show issues and pull requests in state open. This is enabled by default",
+            );
+
+        let closed = Arg::with_name("closed")
+            .long("closed")
+            .short("c")
+            .conflicts_with("open")
+            .conflicts_with("all")
+            .help("Only show closed issues and pull requests")
+            .long_help("Only show issues and pull requests in state closed");
+
+        let all = Arg::with_name("all")
+            .long("all")
+            .short("A")
+            .conflicts_with("open")
+            .conflicts_with("closed")
+            .help("Show all issues and pull requests, regardless of state")
+            .long_help(
+                "Show all issues and pull requests and do not filter by open or closed state",
+            );
 
         let pull_requests = Arg::with_name("pull requests")
             .long("pull-requests")
@@ -62,11 +81,11 @@ pub mod args {
             .help("Include assigned pull requests")
             .long_help("List pull requests in addition to issues.");
 
-        let review_requests = Arg::with_name("review requests")
-            .long("review-requests")
+        let review_requests = Arg::with_name("review queries")
+            .long("review-queries")
             .short("r")
-            .help("Include requests for review")
-            .long_help("List requests for review in addition to issues.");
+            .help("Include queries for review")
+            .long_help("List queries for review in addition to issues.");
 
         let args: ArgMatches = App::new(crate_name!())
             .about("Command line tool for listing and creating GitHub issues")
@@ -77,7 +96,9 @@ pub mod args {
             .arg(target)
             .arg(assigned)
             .arg(limit)
-            .arg(state)
+            .arg(open)
+            .arg(closed)
+            .arg(all)
             .arg(pull_requests)
             .arg(review_requests)
             .get_matches();

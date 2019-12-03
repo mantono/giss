@@ -1,43 +1,117 @@
 pub mod list {
 
-    use crate::issue::issue::{Assignee, Issue, IssueRequest, Label};
+    use crate::github_resources::ghrs;
+    use crate::issue::issue::{Assignee, Data, Issue, IssueRequest, Label, Root};
+    use crate::search_query::search::{GraphQLQuery, SearchIssues, SearchQuery, Sorting};
+    use crate::user::usr;
+    use crate::Target;
+    use core::fmt;
+    use itertools::Itertools;
+    use serde::private::ser::constrain;
+    use serde::Deserialize;
+    use serde_json::{json, Value};
+    use std::collections::HashMap;
+    use std::error::Error;
+    use std::panic::resume_unwind;
 
     pub struct FilterConfig {
         assigned_only: bool,
         pull_requests: bool,
         review_requests: bool,
+        state: FilterState,
     }
 
     impl FilterConfig {
         pub fn from_args(args: &clap::ArgMatches) -> FilterConfig {
+            let state: FilterState = if args.is_present("closed") {
+                FilterState::Closed
+            } else if args.is_present("all") {
+                FilterState::All
+            } else {
+                FilterState::Open
+            };
             FilterConfig {
                 assigned_only: args.is_present("assigned"),
-                pull_requests: args.is_present("pull requests"),
-                review_requests: args.is_present("review requests"),
+                pull_requests: args.is_present("pull queries"),
+                review_requests: args.is_present("review queries"),
+                state,
             }
         }
     }
 
-    pub fn list_issues(targets: &Vec<&str>, token: &String, config: &FilterConfig) {
+    #[derive(Eq, PartialEq, Debug, Copy, Clone)]
+    pub enum FilterState {
+        Open,
+        Closed,
+        All,
+    }
+
+    impl std::fmt::Display for FilterState {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            let output = match self {
+                FilterState::Open => "open",
+                FilterState::Closed => "closed",
+                FilterState::All => "all",
+            };
+            write!(f, "{}", output)
+        }
+    }
+
+    pub fn list_issues(
+        user: &String,
+        targets: &Vec<Target>,
+        token: &String,
+        config: &FilterConfig,
+    ) {
         match targets.len() {
             0 => panic!("No target found"),
             1 => {
-                list_issues_for_target(targets.first().expect("Must be one target"), token, config)
+                let target: &Target = targets.first().expect("Must be one target");
+                if let Target::Repository { name, owner } = target {
+                    list_issues_repo(owner, name, token, config)
+                } else {
+                    list_issues_targets(user, targets, token, config)
+                }
             }
-            _ => list_issues_for_targets(targets, token, config),
+            _ => list_issues_targets(user, targets, token, config),
         }
     }
 
-    fn list_issues_for_target(target: &str, token: &String, config: &FilterConfig) {
-        if target.contains("/") {
-            list_issues_repo(target, token, config)
-        } else {
-            list_issues_org(target, token, config)
-        }
+    fn list_issues_targets(
+        user: &String,
+        target: &Vec<Target>,
+        token: &String,
+        config: &FilterConfig,
+    ) {
+        let orgs: Vec<String> = target.iter().filter_map(|t| t.as_org()).collect();
+        list_issues_orgs(user, &orgs, token, config)
     }
 
-    fn list_issues_repo(repo: &str, token: &String, config: &FilterConfig) {
-        let url: String = [crate::GITHUB_API, "repos", repo, "issues"].join("/");
+    fn list_issues_repo(org: &String, repo: &String, token: &String, config: &FilterConfig) {
+        let mut url: String = [crate::GITHUB_API_V3_URL, "repos", org, repo, "issues?"].join("/");
+
+        let mut query_parameters: Vec<(String, String)> = vec![
+            ("state".to_string(), config.state.to_string()),
+            ("sort".to_string(), "updated".to_string()),
+            ("direction".to_string(), "desc".to_string()),
+        ];
+
+        if config.assigned_only {
+            query_parameters.push(("assignee".to_string(), usr::fetch_username(token)))
+        }
+
+        let query_parameters: String = query_parameters
+            .iter()
+            .map(|(k, v)| {
+                let mut k = k.clone();
+                k.push_str("=");
+                k.push_str(v);
+                k
+            })
+            .join("&");
+
+        url.extend(query_parameters.chars());
+        println!("{:?}", url);
         let client = reqwest::Client::new();
         let mut response: reqwest::Response = client
             .get(&url)
@@ -45,37 +119,78 @@ pub mod list {
             .send()
             .expect("Request to Github API failed");
         let issues: Vec<Issue> = response.json().expect("Unable to process body in response");
-        issues
-            .iter()
-            .filter(|i| i.state == "open")
-            .for_each(print_issue);
-    }
-    fn list_issues_org(org: &str, token: &String, config: &FilterConfig) {
-        // Retrieve all issues for organization here
-    }
-    fn list_issues_for_targets(targets: &Vec<&str>, token: &String, config: &FilterConfig) {
-        // Resolve targets, for example filter out individual repo if parent organization is presnet
+        issues.iter().for_each(|i| print_issue(&i, false));
     }
 
-    fn print_issue(issue: &Issue) {
+    const GITHUB_API_V4_URL: &str = "https://api.github.com/graphql";
+
+    fn list_issues_orgs(
+        user: &String,
+        targets: &Vec<String>,
+        token: &String,
+        config: &FilterConfig,
+    ) {
+        let query: SearchIssues = SearchIssues {
+            archived: false,
+            assignee: if config.assigned_only {
+                Some(user.clone())
+            } else {
+                None
+            },
+            sort: (String::from("updatedAt"), Sorting::Descending),
+            state: config.state.clone(),
+            users: targets.clone(),
+        };
+        let query: GraphQLQuery = query.build();
+        let client = reqwest::Client::new();
+        let request: reqwest::Request = client
+            .post(GITHUB_API_V4_URL)
+            .bearer_auth(token)
+            .json(&query)
+            .build()
+            .expect("Failed to build query");
+
+        let mut response: reqwest::Response = client
+            .execute(request)
+            .expect("Request failed to GitHub v4 API");
+
+        let issues: Root = response.json().expect("Unable to parse body as JSON");
+        print_issues(issues, true);
+    }
+
+    fn print_issues(root: Root, print_repo: bool) {
+        for node in root.data.search.edges {
+            print_issue(&node.node, print_repo)
+        }
+    }
+
+    fn print_issue(issue: &Issue, print_repo: bool) {
         let title: String = truncate(issue.title.clone(), 50);
         let assignees: String = issue
             .assignees
+            .nodes
             .iter()
             .map(|a: &Assignee| &a.login)
             .map(|s: &String| format!("{}{}", "@", s))
             .collect::<Vec<String>>()
             .join(", ");
 
+        let repo: String = if print_repo {
+            issue.repository.name_with_owner.clone()
+        } else {
+            String::from("")
+        };
+
         let labels: String = issue
             .labels
+            .nodes
             .iter()
             .map(|l: &Label| &l.name)
             .map(|s: &String| format!("{}{}", "#", s))
             .collect::<Vec<String>>()
             .join(", ");
 
-        let extra: String = vec![title, assignees, labels]
+        let extra: String = vec![repo, title, assignees, labels]
             .iter()
             .filter(|i| !i.is_empty())
             .map(|s| s.clone())

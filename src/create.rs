@@ -1,6 +1,6 @@
 pub mod create {
     use crate::issue::issue::IssueRequest;
-    use crate::GITHUB_API;
+    use crate::GITHUB_API_V3_URL;
     use std::env;
     use std::fs;
     use std::fs::File;
@@ -29,7 +29,8 @@ pub mod create {
         println!("{:?}", path);
         let mut file: File = File::create(&path).expect("Could not create file");
         println!("{:?}", path);
-        let result = file.write_all(FILE_CONTENT.as_bytes());
+        file.write_all(FILE_CONTENT.as_bytes())
+            .expect("Unable to write file");
 
         let cmd: String = format!("$(env $EDITOR {:?})", path.to_str().expect("Is not empty"));
         let execution_result: std::process::ExitStatus = Command::new("sh")
@@ -68,9 +69,9 @@ pub mod create {
 
         IssueRequest {
             title: title.to_string(),
-            body: body,
-            labels: labels,
-            assignees: assignees,
+            body,
+            labels,
+            assignees,
         }
     }
 
@@ -94,7 +95,7 @@ pub mod create {
 
     pub fn create_issue(repo: &String, token: &String, issue: &IssueRequest) {
         println!("Got issue {:?}", issue);
-        let url: String = [GITHUB_API, "repos", repo, "issues"].join("/");
+        let url: String = [GITHUB_API_V3_URL, "repos", repo, "issues"].join("/");
         let client = reqwest::Client::new();
         let mut response: reqwest::Response = client
             .post(&url)
