@@ -137,7 +137,7 @@ pub mod list {
             } else {
                 None
             },
-            sort: (String::from("updatedAt"), Sorting::Descending),
+            sort: (String::from("updated"), Sorting::Descending),
             state: config.state.clone(),
             users: targets.clone(),
         };

@@ -109,7 +109,7 @@ pub mod search {
         }
 
         fn sort(&self) -> Option<String> {
-            Some(String::from("updatedAt-desc"))
+            Some(String::from("updated-desc"))
         }
     }
 
@@ -193,13 +193,7 @@ pub mod search {
         }
 
         fn sort(&self) -> Option<String> {
-            Some(String::from("updatedAt-desc"))
+            Some(String::from("updated-desc"))
         }
     }
 }
-
-/*
-{
-    "searchQuery": "is:open assignee:mantono archived:false user:zensum user:klira user:open-broker sort:comments-desc"
-}
-*/
