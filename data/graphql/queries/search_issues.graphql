@@ -1,37 +1,40 @@
-query SearchIssues($searchQuery: String!, $limit: Int) {
+query SearchIssues($searchQuery: String!, $limit: Int = 10) {
     search(query: $searchQuery, type: ISSUE, first: $limit) {
         edges {
             node {
                 __typename
-                ... on Issue {
-                    databaseId
-                    number
-                    title
-                    url
-                    state
-                    updatedAt
-                    createdAt
-                    assignees(first: 10) {
-                        nodes {
-                            login
-                        }
-                    }
-                    labels(first: 10) {
-                        nodes {
-                            name
-                        }
-                    }
-                    repository {
-                        nameWithOwner
-                    }
-                    comments {
-                        totalCount
-                    }
-                    reactions {
-                        totalCount
-                    }
-                }
+                ...issueFields
             }
         }
+    }
+}
+
+fragment issueFields on Issue {
+    number
+    databaseId
+    title
+    body
+    url
+    state
+    assignees(first: 10) {
+        nodes {
+            login
+        }
+    }
+    updatedAt
+    createdAt
+    labels(first: 10) {
+        nodes {
+            name
+        }
+    }
+    repository {
+        nameWithOwner
+    }
+    comments {
+        totalCount
+    }
+    reactions {
+        totalCount
     }
 }
