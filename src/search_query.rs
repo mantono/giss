@@ -54,6 +54,7 @@ pub mod search {
                 self.archived(),
                 self.users(),
                 self.state(),
+                self.sort(),
             ]
             .iter()
             .filter_map(|v| v.clone())
@@ -134,6 +135,7 @@ pub mod search {
                 self.archived(),
                 self.users(),
                 self.state(),
+                self.sort(),
             ]
             .iter()
             .filter_map(|v| v.clone())

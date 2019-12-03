@@ -29,7 +29,8 @@ pub mod create {
         println!("{:?}", path);
         let mut file: File = File::create(&path).expect("Could not create file");
         println!("{:?}", path);
-        let result = file.write_all(FILE_CONTENT.as_bytes());
+        file.write_all(FILE_CONTENT.as_bytes())
+            .expect("Unable to write file");
 
         let cmd: String = format!("$(env $EDITOR {:?})", path.to_str().expect("Is not empty"));
         let execution_result: std::process::ExitStatus = Command::new("sh")

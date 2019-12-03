@@ -1,5 +1,3 @@
-use serde::Deserializer;
-
 pub mod issue {
 
     use crate::github_resources::ghrs;

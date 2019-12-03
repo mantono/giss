@@ -47,15 +47,6 @@ pub mod args {
             .long_help("Limit how many issues that should be listed")
             .default_value("10");
 
-        let state = Arg::with_name("state")
-            .long("state")
-            .short("s")
-            .takes_value(true)
-            .default_value("open")
-            .possible_values(&["open", "closed", "all"])
-            .help("Filter issues by state")
-            .long_help("Filter issues and pull request on whether they are in state open or closed, or choose to include all regardless of current state.");
-
         let open = Arg::with_name("open")
             .long("open")
             .short("o")
@@ -85,7 +76,7 @@ pub mod args {
             );
 
         let pull_requests = Arg::with_name("pull requests")
-            .long("pull-queries")
+            .long("pull-requests")
             .short("p")
             .help("Include assigned pull requests")
             .long_help("List pull requests in addition to issues.");

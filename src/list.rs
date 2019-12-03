@@ -6,7 +6,7 @@ pub mod list {
     use crate::user::usr;
     use crate::Target;
     use core::fmt;
-    use itertools::{all, Itertools};
+    use itertools::Itertools;
     use serde::private::ser::constrain;
     use serde::Deserialize;
     use serde_json::{json, Value};

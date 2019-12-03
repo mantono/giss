@@ -1,8 +1,6 @@
 pub mod usr {
     use crate::GITHUB_API_V3_URL;
-    use regex::internal::Input;
     use serde::Deserialize;
-    use serde::Serialize;
     use sha2::{Digest, Sha256};
     use std::fs::File;
     use std::io::Write;
