@@ -53,7 +53,6 @@ pub mod search {
                 self.assignee(),
                 self.archived(),
                 self.users(),
-                self.state(),
                 self.sort(),
             ]
             .iter()
@@ -109,7 +108,7 @@ pub mod search {
         }
 
         fn sort(&self) -> Option<String> {
-            Some(String::from("updated-desc"))
+            Some(String::from("sort:updated-desc"))
         }
     }
 
@@ -193,7 +192,7 @@ pub mod search {
         }
 
         fn sort(&self) -> Option<String> {
-            Some(String::from("updated-desc"))
+            Some(String::from("sort:updated-desc"))
         }
     }
 }
