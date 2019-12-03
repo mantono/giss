@@ -1,7 +1,7 @@
 pub mod list {
 
     use crate::github_resources::ghrs;
-    use crate::issue::issue::{Assignee, Data, Issue, IssueRequest, Label, Root};
+    use crate::issue::issue::{Assignee, Data, Issue, IssueRequest, IssueV3, Label, Root};
     use crate::search_query::search::{GraphQLQuery, SearchIssues, SearchQuery, Sorting};
     use crate::user::usr;
     use crate::Target;
@@ -119,8 +119,8 @@ pub mod list {
             .bearer_auth(token)
             .send()
             .expect("Request to Github API failed");
-        let issues: Vec<Issue> = response.json().expect("Unable to process body in response");
-        issues.iter().for_each(|i| print_issue(&i, false));
+        let issues: Vec<IssueV3> = response.json().expect("Unable to process body in response");
+        issues.iter().for_each(|i| print_issue_v3(&i));
     }
 
     const GITHUB_API_V4_URL: &str = "https://api.github.com/graphql";
@@ -193,6 +193,34 @@ pub mod list {
             .join(", ");
 
         let extra: String = vec![repo, title, assignees, labels]
+            .iter()
+            .filter(|i| !i.is_empty())
+            .map(|s| s.clone())
+            .collect::<Vec<String>>()
+            .join(" | ");
+
+        println!("#{} {}", issue.number, extra);
+    }
+
+    fn print_issue_v3(issue: &IssueV3) {
+        let title: String = truncate(issue.title.clone(), 50);
+        let assignees: String = issue
+            .assignees
+            .iter()
+            .map(|a: &Assignee| &a.login)
+            .map(|s: &String| format!("{}{}", "@", s))
+            .collect::<Vec<String>>()
+            .join(", ");
+
+        let labels: String = issue
+            .labels
+            .iter()
+            .map(|l: &Label| &l.name)
+            .map(|s: &String| format!("{}{}", "#", s))
+            .collect::<Vec<String>>()
+            .join(", ");
+
+        let extra: String = vec![title, assignees, labels]
             .iter()
             .filter(|i| !i.is_empty())
             .map(|s| s.clone())

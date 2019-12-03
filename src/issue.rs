@@ -43,6 +43,20 @@ pub mod issue {
     }
 
     #[derive(Debug, Deserialize)]
+    pub struct IssueV3 {
+        pub url: String,
+        pub id: u64,
+        pub number: u32,
+        pub title: String,
+        pub body: Option<String>,
+        pub updated_at: String,
+        pub state: ghrs::State,
+        pub comments: u32,
+        pub assignees: Vec<Assignee>,
+        pub labels: Vec<Label>,
+    }
+
+    #[derive(Debug, Deserialize)]
     pub struct LabelNode {
         pub nodes: Vec<Label>,
     }
