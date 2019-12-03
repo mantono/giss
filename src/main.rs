@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate clap;
 extern crate dirs;
+extern crate log;
 extern crate regex;
 
 mod args;
@@ -22,6 +23,7 @@ const GITHUB_API_V3_URL: &str = "https://api.github.com";
 fn main() {
     let current_repo: String = read_repo_from_file();
     let args: clap::ArgMatches = parse_args(&current_repo);
+    env_logger::init();
 
     let action: &str = args.value_of("action").expect("Action must be present");
     let token: String = args

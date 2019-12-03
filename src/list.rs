@@ -7,6 +7,7 @@ pub mod list {
     use crate::Target;
     use core::fmt;
     use itertools::Itertools;
+    use log::Level;
     use serde::private::ser::constrain;
     use serde::Deserialize;
     use serde_json::{json, Value};
@@ -111,7 +112,7 @@ pub mod list {
             .join("&");
 
         url.extend(query_parameters.chars());
-        println!("{:?}", url);
+        log::debug!("{:?}", url);
         let client = reqwest::Client::new();
         let mut response: reqwest::Response = client
             .get(&url)
@@ -142,6 +143,7 @@ pub mod list {
             users: targets.clone(),
         };
         let query: GraphQLQuery = query.build();
+        log::debug!("{}", query.variables);
         let client = reqwest::Client::new();
         let request: reqwest::Request = client
             .post(GITHUB_API_V4_URL)
