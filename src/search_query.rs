@@ -33,17 +33,28 @@ pub mod search {
         fn build(&self) -> GraphQLQuery;
     }
 
+    pub enum Type {
+        Issue,
+        PullRequest,
+    }
+
     pub struct SearchIssues {
         pub state: FilterState,
         pub assignee: Option<String>,
+        pub review_requested: Option<String>,
         pub archived: bool,
+        pub resource_type: Option<Type>,
         pub users: Vec<String>,
         pub sort: (String, Sorting),
     }
 
     impl SearchQuery for SearchIssues {
         fn search_type(&self) -> Option<String> {
-            Some(String::from("type:issue"))
+            match self.resource_type {
+                Some(Type::Issue) => Some(String::from("type:issue")),
+                Some(Type::PullRequest) => Some(String::from("type:pr")),
+                None => None,
+            }
         }
 
         fn build(&self) -> GraphQLQuery {
@@ -87,90 +98,6 @@ pub mod search {
             match &self.assignee {
                 Some(name) => Some(format!("assignee:{}", name)),
                 None => None,
-            }
-        }
-
-        fn archived(&self) -> Option<String> {
-            Some(String::from("archived:false"))
-        }
-
-        fn users(&self) -> Option<String> {
-            if self.users.is_empty() {
-                None
-            } else {
-                let users: String = self
-                    .users
-                    .iter()
-                    .map(|user| format!("user:{}", user))
-                    .join(" ");
-                Some(users)
-            }
-        }
-
-        fn sort(&self) -> Option<String> {
-            Some(String::from("sort:updated-desc"))
-        }
-    }
-
-    pub struct SearchPullRequests {
-        pub state: FilterState,
-        pub assignee: Option<String>,
-        pub review_requested: Option<String>,
-        pub archived: bool,
-        pub users: Vec<String>,
-        pub sort: (String, Sorting),
-    }
-
-    impl SearchQuery for SearchPullRequests {
-        fn search_type(&self) -> Option<String> {
-            Some(String::from("type:pr"))
-        }
-
-        fn build(&self) -> GraphQLQuery {
-            let parts: Vec<String> = [
-                self.search_type(),
-                self.state(),
-                self.assignee(),
-                self.archived(),
-                self.users(),
-                self.state(),
-                self.sort(),
-            ]
-            .iter()
-            .filter_map(|v| v.clone())
-            .collect();
-
-            let search_query: String = parts.join(" ");
-
-            GraphQLQuery {
-                variables: json!({
-                    "searchQuery": search_query,
-                    "limit": 10
-                }),
-                query: String::from(include_str!(
-                    "../data/graphql/queries/search_pull_requests.graphql"
-                )),
-                operation_name: String::from("SearchPullRequests"),
-            }
-        }
-    }
-
-    impl SearchPullRequests {
-        fn state(&self) -> Option<String> {
-            match self.state {
-                FilterState::All => None,
-                FilterState::Open => Some(String::from("state:open")),
-                FilterState::Closed => Some(String::from("state:closed")),
-            }
-        }
-
-        fn assignee(&self) -> Option<String> {
-            match &self.assignee {
-                Some(name) => Some(format!("assignee:{}", name)),
-                None => match &self.review_requested {
-                    Some(name) => Some(format!("review_requested:{}", name)),
-                    None => None,
-                },
             }
         }
 
