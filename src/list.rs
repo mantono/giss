@@ -125,7 +125,17 @@ pub mod list {
             .send()
             .expect("Request to Github API failed");
         let issues: Vec<IssueV3> = response.json().expect("Unable to process body in response");
-        issues.iter().for_each(|i| print_issue_v3(&i));
+        issues
+            .iter()
+            .filter(|i| filter_issue(&i, &config))
+            .for_each(|i| print_issue_v3(&i));
+    }
+
+    fn filter_issue(issue: &IssueV3, config: &FilterConfig) -> bool {
+        let allow_issue: bool = config.issues && !issue.is_pull_request();
+        let filter_prs: bool = config.pull_requests || config.review_requests;
+        let allow_pr: bool = filter_prs && issue.is_pull_request();
+        allow_issue || allow_pr
     }
 
     const GITHUB_API_V4_URL: &str = "https://api.github.com/graphql";

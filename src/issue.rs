@@ -53,7 +53,22 @@ pub mod issue {
         pub state: ghrs::State,
         pub comments: u32,
         pub assignees: Vec<Assignee>,
+        pub pull_request: Option<PullRequestV3>,
         pub labels: Vec<Label>,
+    }
+
+    impl IssueV3 {
+        pub fn is_pull_request(&self) -> bool {
+            match self.pull_request {
+                Some(_) => true,
+                None => false,
+            }
+        }
+    }
+
+    #[derive(Debug, Deserialize)]
+    pub struct PullRequestV3 {
+        pub url: String,
     }
 
     #[derive(Debug, Deserialize)]
