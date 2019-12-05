@@ -2,7 +2,7 @@ pub mod list {
 
     use crate::github_resources::ghrs;
     use crate::issue::issue::{Assignee, Data, Issue, IssueRequest, IssueV3, Label, Root};
-    use crate::search_query::search::{GraphQLQuery, SearchIssues, SearchQuery, Sorting};
+    use crate::search_query::search::{GraphQLQuery, SearchIssues, SearchQuery, Sorting, Type};
     use crate::user::usr;
     use crate::Target;
     use core::fmt;
@@ -19,6 +19,7 @@ pub mod list {
         assigned_only: bool,
         pull_requests: bool,
         review_requests: bool,
+        issues: bool,
         state: FilterState,
     }
 
@@ -31,10 +32,14 @@ pub mod list {
             } else {
                 FilterState::Open
             };
+            let pull_requests: bool = args.is_present("pull requests");
+            let review_requests: bool = args.is_present("review requests");
+            let issues: bool = args.is_present("issues") || (!pull_requests && !review_requests);
             FilterConfig {
                 assigned_only: args.is_present("assigned"),
-                pull_requests: args.is_present("pull queries"),
-                review_requests: args.is_present("review queries"),
+                pull_requests,
+                review_requests,
+                issues,
                 state,
             }
         }
@@ -134,6 +139,16 @@ pub mod list {
         let query: SearchIssues = SearchIssues {
             archived: false,
             assignee: if config.assigned_only {
+                Some(user.clone())
+            } else {
+                None
+            },
+            resource_type: match (config.issues, config.pull_requests, config.review_requests) {
+                (true, false, false) => Some(Type::Issue),
+                (true, _, _) => None,
+                (false, _, _) => Some(Type::PullRequest),
+            },
+            review_requested: if config.review_requests {
                 Some(user.clone())
             } else {
                 None

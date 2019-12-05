@@ -4,16 +4,16 @@ query SearchIssues($searchQuery: String!, $limit: Int = 10) {
             node {
                 __typename
                 ...issueFields
+                ...pullRequestFields
             }
         }
     }
 }
 
 fragment issueFields on Issue {
-    number
     databaseId
+    number
     title
-    body
     url
     state
     assignees(first: 10) {
@@ -23,6 +23,35 @@ fragment issueFields on Issue {
     }
     updatedAt
     createdAt
+    labels(first: 10) {
+        nodes {
+            name
+        }
+    }
+    repository {
+        nameWithOwner
+    }
+    comments {
+        totalCount
+    }
+    reactions {
+        totalCount
+    }
+}
+
+fragment pullRequestFields on PullRequest {
+    databaseId
+    number
+    title
+    url
+    state
+    updatedAt
+    createdAt
+    assignees(first: 10) {
+        nodes {
+            login
+        }
+    }
     labels(first: 10) {
         nodes {
             name

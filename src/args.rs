@@ -36,8 +36,8 @@ pub mod args {
             .long("assigned")
             .short("a")
             .conflicts_with("repo")
-            .help("Filter issues assigned to user")
-            .long_help("Only include issues assigned to user");
+            .help("Filter issues/pull requests assigned to user")
+            .long_help("Only include issues and pull requests assigned to user");
 
         let limit = Arg::with_name("limit")
             .takes_value(true)
@@ -75,13 +75,17 @@ pub mod args {
                 "Show all issues and pull requests and do not filter by open or closed state",
             );
 
+        let issues = Arg::with_name("issues")
+            .long("issues")
+            .short("i")
+            .help("List issues");
+
         let pull_requests = Arg::with_name("pull requests")
             .long("pull-requests")
             .short("p")
-            .help("Include assigned pull requests")
-            .long_help("List pull requests in addition to issues.");
+            .help("List pull requests");
 
-        let review_requests = Arg::with_name("review queries")
+        let review_requests = Arg::with_name("review requests")
             .long("review-queries")
             .short("r")
             .help("Include queries for review")
@@ -99,6 +103,7 @@ pub mod args {
             .arg(open)
             .arg(closed)
             .arg(all)
+            .arg(issues)
             .arg(pull_requests)
             .arg(review_requests)
             .get_matches();
