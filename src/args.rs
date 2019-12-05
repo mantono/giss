@@ -86,10 +86,10 @@ pub mod args {
             .help("List pull requests");
 
         let review_requests = Arg::with_name("review requests")
-            .long("review-queries")
+            .long("review-requests")
             .short("r")
-            .help("Include queries for review")
-            .long_help("List queries for review in addition to issues.");
+            .help("Include requests for review")
+            .long_help("List requests for review in addition to issues.");
 
         let args: ArgMatches = App::new(crate_name!())
             .about("Command line tool for listing and creating GitHub issues")
