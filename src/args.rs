@@ -2,8 +2,10 @@ pub mod args {
     use clap::{App, Arg, ArgMatches};
     use regex::Regex;
     use std::fs;
+    use std::ops::Deref;
+    use std::path::{Path, PathBuf};
 
-    pub fn parse_args<'a>(current_repo: &'a str) -> ArgMatches<'a> {
+    pub fn parse_args(current_repo: &str) -> ArgMatches {
         let action = Arg::with_name("action")
             .default_value("list")
             .help("Action to take")
@@ -113,18 +115,40 @@ pub mod args {
     }
 
     pub fn read_repo_from_file() -> String {
+        let current_path: &Path = Path::new(".");
+        let repo_root: PathBuf = traverse(&current_path);
+        let config_file: PathBuf = repo_root.join(".git").join("config");
+        log::debug!("Using Git config file: '{:?}'", config_file);
         let file_content: String =
-            fs::read_to_string(".git/config").expect("Could not find a git config");
+            fs::read_to_string(config_file).expect("Could not find a git config");
+
         let lines: Vec<&str> = file_content
             .lines()
             .filter(|f| f.contains("github.com"))
             .collect();
+
         let repo: &str = lines
             .first()
-            .expect("No Github repoistory found")
+            .expect("No Github repository found")
             .split_terminator(":")
             .last()
             .expect("No match");
         repo.trim_end_matches(".git").to_string()
+    }
+
+    fn traverse(path: &Path) -> PathBuf {
+        let path_full: PathBuf = path
+            .to_path_buf()
+            .canonicalize()
+            .expect("Could not create the canonical path");
+
+        let git_config: PathBuf = path_full.join(".git").join("config");
+        if git_config.exists() {
+            return path_full;
+        }
+        match path_full.parent() {
+            Some(parent) => traverse(parent),
+            None => panic!("No .git directory found in hierarchy"),
+        }
     }
 }
