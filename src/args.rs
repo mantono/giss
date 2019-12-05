@@ -78,7 +78,8 @@ pub mod args {
         let issues = Arg::with_name("issues")
             .long("issues")
             .short("i")
-            .help("List issues");
+            .help("List issues")
+            .long_help("List issues. This is assumed true by default unless -p or -r is given, in which case this flag must explicitly be given in order to include issues.");
 
         let pull_requests = Arg::with_name("pull requests")
             .long("pull-requests")
@@ -89,7 +90,7 @@ pub mod args {
             .long("review-requests")
             .short("r")
             .help("Include requests for review")
-            .long_help("List requests for review in addition to issues.");
+            .long_help("List pull requests for which a review has been requested");
 
         let args: ArgMatches = App::new(crate_name!())
             .about("Command line tool for listing and creating GitHub issues")
