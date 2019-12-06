@@ -5,7 +5,6 @@ pub mod usr {
     use std::fs::File;
     use std::io::Write;
     use std::path::PathBuf;
-    use std::ptr::hash;
 
     #[derive(Debug, Deserialize)]
     pub struct User {

@@ -1,19 +1,11 @@
 pub mod list {
 
-    use crate::github_resources::ghrs;
-    use crate::issue::issue::{Assignee, Data, Issue, IssueRequest, IssueV3, Label, Root};
+    use crate::issue::issue::{Assignee, Issue, IssueV3, Label, Root};
     use crate::search_query::search::{GraphQLQuery, SearchIssues, SearchQuery, Sorting, Type};
     use crate::user::usr;
     use crate::Target;
     use core::fmt;
     use itertools::Itertools;
-    use log::Level;
-    use serde::private::ser::constrain;
-    use serde::Deserialize;
-    use serde_json::{json, Value};
-    use std::collections::HashMap;
-    use std::error::Error;
-    use std::panic::resume_unwind;
 
     pub struct FilterConfig {
         assigned_only: bool,

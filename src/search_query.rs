@@ -3,7 +3,6 @@ pub mod search {
     use itertools::Itertools;
     use serde::Serialize;
     use serde_json::json;
-    use serde_json::Value;
     use std::fmt;
 
     #[derive(Serialize, Debug)]
