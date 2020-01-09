@@ -2,7 +2,6 @@ pub mod issue {
 
     use crate::github_resources::ghrs;
     use serde::Deserialize;
-    use serde::Serialize;
 
     #[derive(Debug, Deserialize)]
     pub struct Root {
@@ -101,14 +100,6 @@ pub mod issue {
     #[derive(Debug, Deserialize)]
     pub struct AssigneeNode {
         pub nodes: Vec<Assignee>,
-    }
-
-    #[derive(Debug, Serialize)]
-    pub struct IssueRequest {
-        pub title: String,
-        pub body: Option<String>,
-        pub labels: Vec<String>,
-        pub assignees: Vec<String>,
     }
 
     impl ghrs::Closeable for Issue {

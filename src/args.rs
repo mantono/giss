@@ -5,12 +5,6 @@ pub mod args {
     use std::path::{Path, PathBuf};
 
     pub fn parse_args(current_repo: &str) -> ArgMatches {
-        let action = Arg::with_name("action")
-            .default_value("list")
-            .help("Action to take")
-            .long_help("Choose whether to list issues or create a new one.")
-            .possible_values(&["list", "create"]);
-
         let target_regex = Regex::new(r"^[\w\-]+(/[\w\-_\.]+)?$").unwrap();
         let target = Arg::with_name("target")
             .takes_value(true)
@@ -97,7 +91,6 @@ pub mod args {
             .about("Command line tool for listing and creating GitHub issues")
             .version(crate_version!())
             .author(crate_authors!())
-            .arg(action)
             .arg(token)
             .arg(target)
             .arg(assigned)

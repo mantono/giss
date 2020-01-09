@@ -1,5 +1,5 @@
 # giss
-*giss* is command line client to list and create GitHub issues, and list pull requests.
+*giss* is command line client to list GitHub issues and pull requests.
 
 ## Usage
 All commands requires a valid GitHub token. The application will automatically read the environment variable
@@ -18,11 +18,8 @@ invoked from a Git repository, an explicit repository will have to given as an a
 - `giss -p` - List only open pull requests in current repo
 - `giss list kotlin -ipa` - List all open issues and pull requests assigned to user in any repository in orgranization _kotlin_
 
-### Create Issue
-The command `giss create` will create an issue for the current repository.
-
 ### Unimplemented Features
-The `--limit` flag and `--review-requests` flag has currently not been implemented
+The `--review-requests` flag has currently not been implemented
 
 See `giss --help` for documentation of all available flags and commands.
 ## Building

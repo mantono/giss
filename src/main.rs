@@ -5,7 +5,6 @@ extern crate log;
 extern crate regex;
 
 mod args;
-mod create;
 mod github_resources;
 mod issue;
 mod list;
@@ -13,8 +12,6 @@ mod search_query;
 mod user;
 
 use args::args::{parse_args, read_repo_from_file};
-use create::create::{create_issue, read_issue};
-use issue::issue::IssueRequest;
 use itertools::Itertools;
 use list::list::{list_issues, FilterConfig};
 
@@ -25,7 +22,6 @@ fn main() {
     let args: clap::ArgMatches = parse_args(&current_repo);
     env_logger::init();
 
-    let action: &str = args.value_of("action").expect("Action must be present");
     let token: String = args
         .value_of("token")
         .expect("No token was present")
@@ -36,27 +32,10 @@ fn main() {
         .expect("Target must be present")
         .collect();
 
-    match action {
-        "create" => {
-            if targets.len() > 1 {
-                panic!("Multiple targets cannot be given when creating an issue")
-            }
-            let target: String = targets
-                .first()
-                .expect("At least one target must be present")
-                .to_string();
-            let read_issue: IssueRequest = read_issue(&target);
-            create_issue(&target, &token, &read_issue)
-        }
-        "list" => {
-            let targets: Vec<Target> =
-                validate_targets(targets).expect("Must have valid target(s)");
-            let user: String = fetch_username(&token);
-            let config = FilterConfig::from_args(&args);
-            list_issues(&user, &targets, &token, &config)
-        }
-        _ => panic!("This should never happen"),
-    }
+    let targets: Vec<Target> = validate_targets(targets).expect("Must have valid target(s)");
+    let user: String = fetch_username(&token);
+    let config = FilterConfig::from_args(&args);
+    list_issues(&user, &targets, &token, &config)
 }
 
 pub enum Target {
