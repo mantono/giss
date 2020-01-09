@@ -13,6 +13,7 @@ pub mod list {
         review_requests: bool,
         issues: bool,
         state: FilterState,
+        limit: u32,
     }
 
     impl FilterConfig {
@@ -27,12 +28,19 @@ pub mod list {
             let pull_requests: bool = args.is_present("pull requests");
             let review_requests: bool = args.is_present("review requests");
             let issues: bool = args.is_present("issues") || (!pull_requests && !review_requests);
+            let limit: u32 = args
+                .value_of("limit")
+                .unwrap()
+                .parse()
+                .expect("Invalid number");
+
             FilterConfig {
                 assigned_only: args.is_present("assigned"),
                 pull_requests,
                 review_requests,
                 issues,
                 state,
+                limit,
             }
         }
     }
@@ -158,6 +166,7 @@ pub mod list {
             sort: (String::from("updated"), Sorting::Descending),
             state: config.state.clone(),
             users: targets.clone(),
+            limit: config.limit,
         };
         let query: GraphQLQuery = query.build();
         log::debug!("{}", query.variables);

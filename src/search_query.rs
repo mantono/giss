@@ -45,6 +45,7 @@ pub mod search {
         pub resource_type: Option<Type>,
         pub users: Vec<String>,
         pub sort: (String, Sorting),
+        pub limit: u32,
     }
 
     impl SearchQuery for SearchIssues {
@@ -74,7 +75,7 @@ pub mod search {
             GraphQLQuery {
                 variables: json!({
                     "searchQuery": search_query,
-                    "limit": 10
+                    "limit": self.limit
                 }),
                 query: String::from(include_str!(
                     "../data/graphql/queries/search_issues.graphql"
