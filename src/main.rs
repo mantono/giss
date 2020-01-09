@@ -65,8 +65,6 @@ pub enum Target {
 }
 
 use crate::user::usr::fetch_username;
-use Target::Organization as Org;
-use Target::Repository as Repo;
 
 impl Target {
     fn new(target: &str) -> Target {
@@ -93,12 +91,6 @@ impl Target {
         }
     }
 
-    fn as_repo(&self) -> Option<(String, String)> {
-        match self {
-            Target::Organization { .. } => None,
-            Target::Repository { owner, name } => Some((owner.clone(), name.clone())),
-        }
-    }
     fn as_org(&self) -> Option<String> {
         match self {
             Target::Organization { name } => Some(name.clone()),

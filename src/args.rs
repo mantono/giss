@@ -2,7 +2,6 @@ pub mod args {
     use clap::{App, Arg, ArgMatches};
     use regex::Regex;
     use std::fs;
-    use std::ops::Deref;
     use std::path::{Path, PathBuf};
 
     pub fn parse_args(current_repo: &str) -> ArgMatches {
