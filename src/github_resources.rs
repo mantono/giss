@@ -8,6 +8,7 @@ pub mod ghrs {
         Open,
         #[serde(rename(deserialize = "closed"))]
         #[serde(alias = "CLOSED")]
+        #[serde(alias = "MERGED")]
         Closed,
     }
 
