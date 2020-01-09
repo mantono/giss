@@ -128,6 +128,7 @@ pub mod list {
         issues
             .iter()
             .filter(|i| filter_issue(&i, &config))
+            .take(config.limit as usize)
             .for_each(|i| print_issue_v3(&i));
     }
 
