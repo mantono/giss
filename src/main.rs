@@ -8,12 +8,12 @@ mod args;
 mod github_resources;
 mod issue;
 mod list;
-mod search_query;
+mod search;
 mod user;
 
-use args::args::{parse_args, read_repo_from_file};
+use args::{parse_args, read_repo_from_file};
 use itertools::Itertools;
-use list::list::{list_issues, FilterConfig};
+use list::{list_issues, FilterConfig};
 
 const GITHUB_API_V3_URL: &str = "https://api.github.com";
 
@@ -35,7 +35,7 @@ pub enum Target {
     Repository { owner: String, name: String },
 }
 
-use crate::user::usr::fetch_username;
+use crate::user::fetch_username;
 
 impl Target {
     fn new(target: &str) -> Target {
