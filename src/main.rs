@@ -22,16 +22,8 @@ fn main() {
     let args: clap::ArgMatches = parse_args(&current_repo);
     env_logger::init();
 
-    let token: String = args
-        .value_of("token")
-        .expect("No token was present")
-        .to_string();
-
-    let targets: Vec<&str> = args
-        .values_of("target")
-        .expect("Target must be present")
-        .collect();
-
+    let token: String = args.value_of("token").expect("No token was present").to_string();
+    let targets: Vec<&str> = args.values_of("target").expect("Target must be present").collect();
     let targets: Vec<Target> = validate_targets(targets).expect("Must have valid target(s)");
     let user: String = fetch_username(&token);
     let config = FilterConfig::from_args(&args);
@@ -92,18 +84,8 @@ impl Clone for Target {
 
 fn validate_targets(targets: Vec<&str>) -> Result<Vec<Target>, &str> {
     let targets: Vec<Target> = targets.iter().unique().map(|t| Target::new(t)).collect();
-
-    let orgs: Vec<Target> = targets
-        .iter()
-        .filter(|t| !t.is_repo())
-        .map(|t| t.clone())
-        .collect();
-
-    let repos: Vec<Target> = targets
-        .iter()
-        .filter(|t| t.is_repo())
-        .map(|t| t.clone())
-        .collect();
+    let orgs: Vec<Target> = targets.iter().filter(|t| !t.is_repo()).map(|t| t.clone()).collect();
+    let repos: Vec<Target> = targets.iter().filter(|t| t.is_repo()).map(|t| t.clone()).collect();
 
     if targets.is_empty() {
         Result::Err("No targets specified")
