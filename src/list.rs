@@ -108,6 +108,17 @@ fn list_issues_repo(org: &String, repo: &String, token: &String, config: &Filter
         .bearer_auth(token)
         .send()
         .expect("Request to Github API failed");
+
+    let status_code: &u16 = &response.status().as_u16();
+    match status_code {
+        400u16..=599u16 => log::error!(
+            "GitHub API response: {} - {}",
+            status_code,
+            response.text().unwrap_or_default()
+        ),
+        _ => log::debug!("GitHub API response: {}", status_code),
+    }
+
     let issues: Vec<IssueV3> = response.json().expect("Unable to process body in response");
     issues
         .iter()

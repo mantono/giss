@@ -1,9 +1,11 @@
 #[macro_use]
 extern crate clap;
 extern crate dirs;
+extern crate lazy_static;
 extern crate log;
 extern crate regex;
 
+mod api;
 mod args;
 mod github_resources;
 mod issue;

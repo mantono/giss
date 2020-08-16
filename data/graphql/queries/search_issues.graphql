@@ -15,7 +15,7 @@ fragment issueFields on Issue {
     number
     title
     url
-    state
+    issueState: state
     assignees(first: 10) {
         nodes {
             login
@@ -30,12 +30,6 @@ fragment issueFields on Issue {
     }
     repository {
         nameWithOwner
-    }
-    comments {
-        totalCount
-    }
-    reactions {
-        totalCount
     }
 }
 
@@ -44,7 +38,7 @@ fragment pullRequestFields on PullRequest {
     number
     title
     url
-    state
+    pullRequestState: state
     updatedAt
     createdAt
     assignees(first: 10) {
@@ -59,11 +53,5 @@ fragment pullRequestFields on PullRequest {
     }
     repository {
         nameWithOwner
-    }
-    comments {
-        totalCount
-    }
-    reactions {
-        totalCount
     }
 }
