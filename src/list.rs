@@ -76,7 +76,7 @@ pub fn list_issues(user: &str, targets: &Vec<Target>, token: &str, config: &Filt
     }
 }
 
-fn list_issues_targets(user: &str, target: &Vec<Target>, token: &str, config: &FilterConfig) {
+fn list_issues_targets(user: &str, target: &[Target], token: &str, config: &FilterConfig) {
     let orgs: Vec<String> = target.iter().filter_map(|t| t.as_org()).collect();
     list_issues_orgs(user, &orgs, token, config)
 }
@@ -104,7 +104,7 @@ fn list_issues_repo(org: &str, repo: &str, token: &str, config: &FilterConfig) {
         })
         .join("&");
 
-    url.extend(query_parameters.chars());
+    url.push_str(&query_parameters);
     log::debug!("{:?}", url);
     let client = reqwest::Client::new();
     let mut response: reqwest::Response = client
@@ -138,7 +138,7 @@ fn filter_issue(issue: &IssueV3, config: &FilterConfig) -> bool {
     allow_issue || allow_pr
 }
 
-fn list_issues_orgs(user: &str, targets: &Vec<String>, token: &str, config: &FilterConfig) {
+fn list_issues_orgs(user: &str, targets: &[String], token: &str, config: &FilterConfig) {
     let query: SearchIssues = SearchIssues {
         archived: false,
         assignee: if config.assigned_only {
@@ -150,7 +150,7 @@ fn list_issues_orgs(user: &str, targets: &Vec<String>, token: &str, config: &Fil
             (true, false, false) => Some(Type::Issue),
             (false, true, false) => Some(Type::PullRequest),
             (false, false, true) => Some(Type::ReviewRequest),
-            (true, true, false) => None,
+            (false, false, false) => None,
             (_, _, _) => panic!(
                 "Illegal combination: {}, {}, {}",
                 config.issues, config.pull_requests, config.review_requests
@@ -163,7 +163,7 @@ fn list_issues_orgs(user: &str, targets: &Vec<String>, token: &str, config: &Fil
         },
         sort: (String::from("updated"), Sorting::Descending),
         state: config.state,
-        users: targets.clone(),
+        users: targets.to_vec(),
         limit: config.limit,
     };
     let query: GraphQLQuery = query.build();
