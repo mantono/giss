@@ -11,6 +11,7 @@ publish = false
 [dependencies]
 clap = "2.33"
 dirs = "2.0"
+lazy_static = "1.4"
 regex = "1"
 reqwest = "0.9"
 serde = "1.0"

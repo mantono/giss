@@ -1,32 +1,39 @@
 #[macro_use]
 extern crate clap;
 extern crate dirs;
+extern crate lazy_static;
 extern crate log;
 extern crate regex;
 
+mod api;
 mod args;
 mod github_resources;
 mod issue;
 mod list;
-mod search_query;
+mod logger;
+mod search;
 mod user;
 
-use args::args::{parse_args, read_repo_from_file};
+use args::{parse_args, read_repo_from_file};
 use itertools::Itertools;
-use list::list::{list_issues, FilterConfig};
+use list::{list_issues, FilterConfig};
+use logger::setup_logging;
 
 const GITHUB_API_V3_URL: &str = "https://api.github.com";
 
 fn main() {
     let current_repo: String = read_repo_from_file();
     let args: clap::ArgMatches = parse_args(&current_repo);
-    env_logger::init();
+    let verbosity_level: u8 = args.value_of("verbosity").unwrap().parse::<u8>().unwrap();
+    setup_logging(verbosity_level);
 
     let token: String = args.value_of("token").expect("No token was present").to_string();
     let targets: Vec<&str> = args.values_of("target").expect("Target must be present").collect();
     let targets: Vec<Target> = validate_targets(targets).expect("Must have valid target(s)");
     let user: String = fetch_username(&token);
     let config = FilterConfig::from_args(&args);
+
+    log::debug!("Config: {:?}", config);
     list_issues(&user, &targets, &token, &config)
 }
 
@@ -35,12 +42,12 @@ pub enum Target {
     Repository { owner: String, name: String },
 }
 
-use crate::user::usr::fetch_username;
+use crate::user::fetch_username;
 
 impl Target {
     fn new(target: &str) -> Target {
-        if target.contains("/") {
-            let parts: Vec<&str> = target.split_terminator("/").collect();
+        if target.contains('/') {
+            let parts: Vec<&str> = target.split_terminator('/').collect();
             if parts.len() != 2 {
                 panic!("Expected format 'org/repo', got: {}", target);
             }
@@ -84,8 +91,8 @@ impl Clone for Target {
 
 fn validate_targets(targets: Vec<&str>) -> Result<Vec<Target>, &str> {
     let targets: Vec<Target> = targets.iter().unique().map(|t| Target::new(t)).collect();
-    let orgs: Vec<Target> = targets.iter().filter(|t| !t.is_repo()).map(|t| t.clone()).collect();
-    let repos: Vec<Target> = targets.iter().filter(|t| t.is_repo()).map(|t| t.clone()).collect();
+    let orgs: Vec<Target> = targets.iter().filter(|t| !t.is_repo()).cloned().collect();
+    let repos: Vec<Target> = targets.iter().filter(|t| t.is_repo()).cloned().collect();
 
     if targets.is_empty() {
         Result::Err("No targets specified")
