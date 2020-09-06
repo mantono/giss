@@ -1,4 +1,4 @@
-use crate::issue::{Assignee, IdNode, Issue, IssueV3, Label, Root, UserId};
+use crate::issue::{Assignee, Issue, IssueV3, Label, Root};
 use crate::search::{GraphQLQuery, SearchIssues, SearchQuery, Sorting, Type};
 use crate::user;
 use crate::Target;
@@ -29,12 +29,6 @@ impl FilterConfig {
         let pull_requests: bool = args.is_present("pull requests");
         let review_requests: bool = args.is_present("review requests");
         let issues: bool = args.is_present("issues");
-
-        let filter_all: bool = !pull_requests && !review_requests && !issues;
-
-        let pull_requests: bool = pull_requests || filter_all;
-        let review_requests: bool = review_requests || filter_all;
-        let issues: bool = issues || filter_all;
 
         let limit: u32 = args.value_of("limit").unwrap().parse().expect("Invalid number");
 
@@ -156,8 +150,13 @@ fn list_issues_orgs(user: &str, targets: &Vec<String>, token: &str, config: &Fil
         },
         resource_type: match (config.issues, config.pull_requests, config.review_requests) {
             (true, false, false) => Some(Type::Issue),
-            (true, _, _) => None,
-            (false, _, _) => Some(Type::PullRequest),
+            (false, true, false) => Some(Type::PullRequest),
+            (false, false, true) => Some(Type::ReviewRequest),
+            (true, true, false) => None,
+            (_, _, _) => panic!(
+                "Illegal combination: {}, {}, {}",
+                config.issues, config.pull_requests, config.review_requests
+            ),
         },
         review_requested: if config.review_requests {
             Some(user.to_string())
@@ -182,16 +181,7 @@ fn list_issues_orgs(user: &str, targets: &Vec<String>, token: &str, config: &Fil
     let mut response: reqwest::Response = client.execute(request).expect("Request failed to GitHub v4 API");
 
     let issues: Root = response.json().expect("Unable to parse body as JSON");
-    let user_id: String = issues.data.viewer.id;
-
-    let issues: Vec<&Issue> = issues
-        .data
-        .search
-        .edges
-        .iter()
-        .map(|n| &n.node)
-        .filter(|i: &&Issue| !config.review_requests || i.user_has_review_req(&user_id))
-        .collect();
+    let issues: Vec<&Issue> = issues.data.search.edges.iter().map(|n| &n.node).collect();
 
     for issue in issues {
         print_issue(&issue, true)

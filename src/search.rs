@@ -34,6 +34,7 @@ pub trait SearchQuery {
 pub enum Type {
     Issue,
     PullRequest,
+    ReviewRequest,
 }
 
 pub struct SearchIssues {
@@ -52,6 +53,11 @@ impl SearchQuery for SearchIssues {
         match self.resource_type {
             Some(Type::Issue) => Some(String::from("type:issue")),
             Some(Type::PullRequest) => Some(String::from("type:pr")),
+            Some(Type::ReviewRequest) => {
+                let reviewer = self.review_requested.as_ref().expect("Reviewer was not sent");
+                let query: String = format!("type:pr review-requested:{}", reviewer);
+                Some(query)
+            }
             None => None,
         }
     }

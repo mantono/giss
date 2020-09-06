@@ -68,19 +68,25 @@ pub fn parse_args(current_repo: &str) -> ArgMatches {
     let issues = Arg::with_name("issues")
         .long("issues")
         .short("i")
-        .help("List issues")
-        .long_help("List issues. This is assumed true by default unless -p or -r is given, in which case this flag must explicitly be given in order to include issues.");
+        .conflicts_with("review requests")
+        .conflicts_with("pull requests")
+        .help("Only list issues");
 
     let pull_requests = Arg::with_name("pull requests")
         .long("pull-requests")
         .short("p")
-        .help("List pull requests");
+        .conflicts_with("review requests")
+        .conflicts_with("issues")
+        .help("Only list pull requests");
 
     let review_requests = Arg::with_name("review requests")
         .long("review-requests")
         .short("r")
-        .help("Filter pull requests where user is request to review")
-        .long_help("Only include pull requests where the user has been requested to review it");
+        .conflicts_with("pull requests")
+        .conflicts_with("issues")
+        .conflicts_with("assigned")
+        .help("Show pull requests where user is request to review")
+        .long_help("Only show pull requests where the user has been requested to review it");
 
     let verbosity = Arg::with_name("verbosity")
         .takes_value(true)
