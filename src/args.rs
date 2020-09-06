@@ -55,7 +55,7 @@ pub fn parse_args(current_repo: &str) -> ArgMatches {
         .conflicts_with("open")
         .conflicts_with("all")
         .help("Only show closed issues and pull requests")
-        .long_help("Only show issues and pull requests in state closed");
+        .long_help("Only show issues and pull requests in state closed or merged");
 
     let all = Arg::with_name("all")
         .long("all")
@@ -68,22 +68,45 @@ pub fn parse_args(current_repo: &str) -> ArgMatches {
     let issues = Arg::with_name("issues")
         .long("issues")
         .short("i")
-        .help("List issues")
-        .long_help("List issues. This is assumed true by default unless -p or -r is given, in which case this flag must explicitly be given in order to include issues.");
+        .conflicts_with("review requests")
+        .conflicts_with("pull requests")
+        .help("Only list issues");
 
     let pull_requests = Arg::with_name("pull requests")
         .long("pull-requests")
         .short("p")
-        .help("List pull requests");
+        .conflicts_with("review requests")
+        .conflicts_with("issues")
+        .help("Only list pull requests");
 
     let review_requests = Arg::with_name("review requests")
         .long("review-requests")
         .short("r")
-        .help("Include requests for review")
-        .long_help("List pull requests for which a review has been requested");
+        .conflicts_with("pull requests")
+        .conflicts_with("issues")
+        .conflicts_with("assigned")
+        .help("Show pull requests where user is request to review")
+        .long_help("Only show pull requests where the user has been requested to review it");
+
+    let verbosity = Arg::with_name("verbosity")
+        .takes_value(true)
+        .default_value("1")
+        .validator(|n: String| {
+            let range = 0u8..=5u8;
+            let n: u8 = n.parse::<u8>().unwrap();
+            if range.contains(&n) {
+                Ok(())
+            } else {
+                Err("Invalid value".to_string())
+            }
+        })
+        .short("v")
+        .long("verbosity")
+        .help("Set verbosity level, 0 - 5")
+        .long_help("Set the verbosity level, from 0 (least amount of output) to 5 (most verbose). Note that logging level configured via RUST_LOG overrides this setting.");
 
     let args: ArgMatches = App::new(crate_name!())
-        .about("Command line tool for listing and creating GitHub issues")
+        .about("Command line tool for listing GitHub issues and pull requests")
         .version(crate_version!())
         .author(crate_authors!())
         .arg(token)
@@ -96,6 +119,7 @@ pub fn parse_args(current_repo: &str) -> ArgMatches {
         .arg(issues)
         .arg(pull_requests)
         .arg(review_requests)
+        .arg(verbosity)
         .get_matches();
 
     args
@@ -113,7 +137,7 @@ pub fn read_repo_from_file() -> String {
     let repo: &str = lines
         .first()
         .expect("No Github repository found")
-        .split_terminator(":")
+        .split_terminator(':')
         .last()
         .expect("No match");
     repo.trim_end_matches(".git").to_string()

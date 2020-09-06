@@ -5,6 +5,7 @@ use crate::Target;
 use core::fmt;
 use itertools::Itertools;
 
+#[derive(Debug)]
 pub struct FilterConfig {
     assigned_only: bool,
     pull_requests: bool,
@@ -23,13 +24,16 @@ impl FilterConfig {
         } else {
             FilterState::Open
         };
+        let assigned_only: bool = args.is_present("assigned");
+
         let pull_requests: bool = args.is_present("pull requests");
         let review_requests: bool = args.is_present("review requests");
-        let issues: bool = args.is_present("issues") || (!pull_requests && !review_requests);
+        let issues: bool = args.is_present("issues");
+
         let limit: u32 = args.value_of("limit").unwrap().parse().expect("Invalid number");
 
         FilterConfig {
-            assigned_only: args.is_present("assigned"),
+            assigned_only,
             pull_requests,
             review_requests,
             issues,
@@ -57,7 +61,7 @@ impl std::fmt::Display for FilterState {
     }
 }
 
-pub fn list_issues(user: &String, targets: &Vec<Target>, token: &String, config: &FilterConfig) {
+pub fn list_issues(user: &str, targets: &Vec<Target>, token: &str, config: &FilterConfig) {
     match targets.len() {
         0 => panic!("No target found"),
         1 => {
@@ -72,12 +76,12 @@ pub fn list_issues(user: &String, targets: &Vec<Target>, token: &String, config:
     }
 }
 
-fn list_issues_targets(user: &String, target: &Vec<Target>, token: &String, config: &FilterConfig) {
+fn list_issues_targets(user: &str, target: &[Target], token: &str, config: &FilterConfig) {
     let orgs: Vec<String> = target.iter().filter_map(|t| t.as_org()).collect();
     list_issues_orgs(user, &orgs, token, config)
 }
 
-fn list_issues_repo(org: &String, repo: &String, token: &String, config: &FilterConfig) {
+fn list_issues_repo(org: &str, repo: &str, token: &str, config: &FilterConfig) {
     let mut url: String = [crate::GITHUB_API_V3_URL, "repos", org, repo, "issues?"].join("/");
 
     let mut query_parameters: Vec<(String, String)> = vec![
@@ -100,7 +104,7 @@ fn list_issues_repo(org: &String, repo: &String, token: &String, config: &Filter
         })
         .join("&");
 
-    url.extend(query_parameters.chars());
+    url.push_str(&query_parameters);
     log::debug!("{:?}", url);
     let client = reqwest::Client::new();
     let mut response: reqwest::Response = client
@@ -108,6 +112,17 @@ fn list_issues_repo(org: &String, repo: &String, token: &String, config: &Filter
         .bearer_auth(token)
         .send()
         .expect("Request to Github API failed");
+
+    let status_code: &u16 = &response.status().as_u16();
+    match status_code {
+        400u16..=599u16 => log::error!(
+            "GitHub API response: {} - {}",
+            status_code,
+            response.text().unwrap_or_default()
+        ),
+        _ => log::debug!("GitHub API response: {}", status_code),
+    }
+
     let issues: Vec<IssueV3> = response.json().expect("Unable to process body in response");
     issues
         .iter()
@@ -123,46 +138,48 @@ fn filter_issue(issue: &IssueV3, config: &FilterConfig) -> bool {
     allow_issue || allow_pr
 }
 
-const GITHUB_API_V4_URL: &str = "https://api.github.com/graphql";
-
-fn list_issues_orgs(user: &String, targets: &Vec<String>, token: &String, config: &FilterConfig) {
+fn list_issues_orgs(user: &str, targets: &[String], token: &str, config: &FilterConfig) {
     let query: SearchIssues = SearchIssues {
         archived: false,
-        assignee: if config.assigned_only { Some(user.clone()) } else { None },
+        assignee: if config.assigned_only {
+            Some(user.to_string())
+        } else {
+            None
+        },
         resource_type: match (config.issues, config.pull_requests, config.review_requests) {
             (true, false, false) => Some(Type::Issue),
-            (true, _, _) => None,
-            (false, _, _) => Some(Type::PullRequest),
+            (false, true, false) => Some(Type::PullRequest),
+            (false, false, true) => Some(Type::ReviewRequest),
+            (false, false, false) => None,
+            (_, _, _) => panic!(
+                "Illegal combination: {}, {}, {}",
+                config.issues, config.pull_requests, config.review_requests
+            ),
         },
         review_requested: if config.review_requests {
-            Some(user.clone())
+            Some(user.to_string())
         } else {
             None
         },
         sort: (String::from("updated"), Sorting::Descending),
-        state: config.state.clone(),
-        users: targets.clone(),
+        state: config.state,
+        users: targets.to_vec(),
         limit: config.limit,
     };
     let query: GraphQLQuery = query.build();
-    log::debug!("{}", query.variables);
-    let client = reqwest::Client::new();
-    let request: reqwest::Request = client
-        .post(GITHUB_API_V4_URL)
-        .bearer_auth(token)
-        .json(&query)
-        .build()
-        .expect("Failed to build query");
 
-    let mut response: reqwest::Response = client.execute(request).expect("Request failed to GitHub v4 API");
+    let issues: Root = match crate::api::v4::request(token, query) {
+        Ok(body) => body,
+        Err(e) => {
+            log::error!("Error, status code: {}", e);
+            std::process::exit(4)
+        }
+    };
 
-    let issues: Root = response.json().expect("Unable to parse body as JSON");
-    print_issues(issues, true);
-}
+    let issues: Vec<&Issue> = issues.data.search.edges.iter().map(|n| &n.node).collect();
 
-fn print_issues(root: Root, print_repo: bool) {
-    for node in root.data.search.edges {
-        print_issue(&node.node, print_repo)
+    for issue in issues {
+        print_issue(&issue, true)
     }
 }
 
@@ -195,7 +212,7 @@ fn print_issue(issue: &Issue, print_repo: bool) {
     let extra: String = vec![repo, title, assignees, labels]
         .iter()
         .filter(|i| !i.is_empty())
-        .map(|s| s.clone())
+        .cloned()
         .collect::<Vec<String>>()
         .join(" | ");
 
@@ -226,7 +243,6 @@ fn print_issue_v3(issue: &IssueV3) {
         .map(|s| s.clone())
         .collect::<Vec<String>>()
         .join(" | ");
-
     println!("#{} {}", issue.number, extra);
 }
 

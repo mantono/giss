@@ -11,7 +11,7 @@ pub struct User {
     pub id: u64,
 }
 
-fn api_lookup_username(token: &String) -> User {
+fn api_lookup_username(token: &str) -> User {
     let url: String = [GITHUB_API_V3_URL, "user"].join("/");
     let client = reqwest::Client::new();
     let mut response: reqwest::Response = client
@@ -23,7 +23,7 @@ fn api_lookup_username(token: &String) -> User {
     response.json::<User>().expect("Unable to parse GitHub user")
 }
 
-pub fn fetch_username(token: &String) -> String {
+pub fn fetch_username(token: &str) -> String {
     match get_saved_username(token) {
         Some(username) => username,
         None => {
@@ -34,7 +34,7 @@ pub fn fetch_username(token: &String) -> String {
     }
 }
 
-fn save_username(token: &String, username: &String) -> Result<(), std::io::Error> {
+fn save_username(token: &str, username: &str) -> Result<(), std::io::Error> {
     let token_hash: String = hash_token(token);
     let mut path: PathBuf = get_users_dir();
     std::fs::create_dir_all(&path).expect("Unable to create path");
@@ -43,7 +43,7 @@ fn save_username(token: &String, username: &String) -> Result<(), std::io::Error
     file.write_all(username.as_bytes())
 }
 
-fn hash_token(token: &String) -> String {
+fn hash_token(token: &str) -> String {
     let mut hasher = Sha256::new();
     hasher.input(token);
     //  format!("{:02x}", hasher.result().as_slice().iter().format(""))
@@ -56,7 +56,7 @@ fn get_users_dir() -> PathBuf {
     path
 }
 
-fn get_saved_username(token: &String) -> Option<String> {
+fn get_saved_username(token: &str) -> Option<String> {
     let token_hash: String = hash_token(token);
     let mut path: PathBuf = get_users_dir();
     path.push(token_hash);

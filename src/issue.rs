@@ -32,6 +32,8 @@ pub struct Issue {
     pub body: Option<String>,
     #[serde(alias = "updatedAt")]
     pub updated_at: String,
+    #[serde(alias = "issueState")]
+    #[serde(alias = "pullRequestState")]
     pub state: ghrs::State,
     pub comments: Comments,
     pub assignees: AssigneeNode,
@@ -56,10 +58,7 @@ pub struct IssueV3 {
 
 impl IssueV3 {
     pub fn is_pull_request(&self) -> bool {
-        match self.pull_request {
-            Some(_) => true,
-            None => false,
-        }
+        self.pull_request.is_some()
     }
 }
 
