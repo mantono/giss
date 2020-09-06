@@ -13,7 +13,7 @@ pub(crate) mod v4 {
             .unwrap();
     }
 
-    fn request<T: serde::de::DeserializeOwned>(token: &str, query: crate::search::GraphQLQuery) -> Result<T, u16> {
+    pub fn request<T: serde::de::DeserializeOwned>(token: &str, query: crate::search::GraphQLQuery) -> Result<T, u16> {
         log::debug!("{}", query.variables);
 
         let request: reqwest::Request = CLIENT
@@ -29,7 +29,7 @@ pub(crate) mod v4 {
         match status_code {
             200 => {
                 log::debug!("GitHub API: {}", status_code);
-                Ok(response.json().unwrap())
+                Ok(response.json().expect("Unable to parse body"))
             }
             _ => {
                 let error: String = response.text().unwrap_or_default();

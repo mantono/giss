@@ -138,8 +138,6 @@ fn filter_issue(issue: &IssueV3, config: &FilterConfig) -> bool {
     allow_issue || allow_pr
 }
 
-const GITHUB_API_V4_URL: &str = "https://api.github.com/graphql";
-
 fn list_issues_orgs(user: &str, targets: &Vec<String>, token: &str, config: &FilterConfig) {
     let query: SearchIssues = SearchIssues {
         archived: false,
@@ -169,28 +167,19 @@ fn list_issues_orgs(user: &str, targets: &Vec<String>, token: &str, config: &Fil
         limit: config.limit,
     };
     let query: GraphQLQuery = query.build();
-    log::debug!("{}", query.variables);
-    let client = reqwest::Client::new();
-    let request: reqwest::Request = client
-        .post(GITHUB_API_V4_URL)
-        .bearer_auth(token)
-        .json(&query)
-        .build()
-        .expect("Failed to build query");
 
-    let mut response: reqwest::Response = client.execute(request).expect("Request failed to GitHub v4 API");
+    let issues: Root = match crate::api::v4::request(token, query) {
+        Ok(body) => body,
+        Err(e) => {
+            log::error!("Error, status code: {}", e);
+            std::process::exit(4)
+        }
+    };
 
-    let issues: Root = response.json().expect("Unable to parse body as JSON");
     let issues: Vec<&Issue> = issues.data.search.edges.iter().map(|n| &n.node).collect();
 
     for issue in issues {
         print_issue(&issue, true)
-    }
-}
-
-fn print_issues(root: Root, print_repo: bool) {
-    for node in root.data.search.edges {
-        print_issue(&node.node, print_repo)
     }
 }
 
@@ -223,7 +212,7 @@ fn print_issue(issue: &Issue, print_repo: bool) {
     let extra: String = vec![repo, title, assignees, labels]
         .iter()
         .filter(|i| !i.is_empty())
-        .map(|s| s.clone())
+        .cloned()
         .collect::<Vec<String>>()
         .join(" | ");
 
