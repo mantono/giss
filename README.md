@@ -81,3 +81,7 @@ The application is built with cargo. Simply run the following command in the pro
 cargo build --release
 ```
 A binary will be created and put in directory `target/release`.
+
+
+## Install
+Run `cargo install --path .`
