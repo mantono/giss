@@ -1,20 +1,42 @@
-name: Rust
-on: [push]
+name: Build & Test
+on:
+  push:
+    paths:
+      - "**/Cargo.toml"
+      - "**/Cargo.lock"
+      - "src/**"
+      - "tests/**"
+      - ".github/workflows/rust.yml"
 jobs:
   build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+      max-parallel: 3
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/cache@v1
+        id: cache-cargo-fetch
+        with:
+          key: ${{ runner.os }}-cargo-fetch-${{ hashFiles('Cargo.lock') }}
+          path: target
+          restore-keys: ${{ runner.os }}-cargo-fetch
+      - name: Fetch Dependencies
+        if: steps.cache-cargo-fetch.outputs.cache-hit != 'true'
+        run: cargo fetch
+      - name: Build
+        run: cargo build --all-features
+      - name: Run tests
+        run: cargo test
+
+  lint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
-    - uses: actions/cache@v1
-      id: cache-cargo
-      with:
-        key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
-        path: target/release/deps
-        restore-keys: ${{ runner.os }}-cargo
-    - name: Fetch Dependencies
-      if: steps.cache-cargo.outputs.cache-hit != 'true'
-      run: cargo fetch
-    - name: Build
-      run: cargo build --release --verbose
-    - name: Run tests
-      run: cargo test --verbose
+      - uses: actions/checkout@v1
+      - run: rustup component add clippy
+      - uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --all-features
