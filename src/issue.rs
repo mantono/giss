@@ -42,32 +42,6 @@ pub struct Issue {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct IssueV3 {
-    pub url: String,
-    pub id: u64,
-    pub number: u32,
-    pub title: String,
-    pub body: Option<String>,
-    pub updated_at: String,
-    pub state: ghrs::State,
-    pub comments: u32,
-    pub assignees: Vec<Assignee>,
-    pub pull_request: Option<PullRequestV3>,
-    pub labels: Vec<Label>,
-}
-
-impl IssueV3 {
-    pub fn is_pull_request(&self) -> bool {
-        self.pull_request.is_some()
-    }
-}
-
-#[derive(Debug, Deserialize)]
-pub struct PullRequestV3 {
-    pub url: String,
-}
-
-#[derive(Debug, Deserialize)]
 pub struct LabelNode {
     pub nodes: Vec<Label>,
 }

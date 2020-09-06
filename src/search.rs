@@ -1,4 +1,5 @@
 use crate::list::FilterState;
+use crate::Target;
 use itertools::Itertools;
 use serde::Serialize;
 use serde_json::json;
@@ -43,7 +44,7 @@ pub struct SearchIssues {
     pub review_requested: Option<String>,
     pub archived: bool,
     pub resource_type: Option<Type>,
-    pub users: Vec<String>,
+    pub targets: Vec<Target>,
     pub sort: (String, Sorting),
     pub limit: u32,
 }
@@ -110,10 +111,10 @@ impl SearchIssues {
     }
 
     fn users(&self) -> Option<String> {
-        if self.users.is_empty() {
+        if self.targets.is_empty() {
             None
         } else {
-            let users: String = self.users.iter().map(|user| format!("user:{}", user)).join(" ");
+            let users: String = self.targets.iter().map(|user| user.to_string()).join(" ");
             Some(users)
         }
     }

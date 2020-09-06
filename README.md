@@ -4,14 +4,16 @@
 ## Usage
 All commands requires a valid GitHub token. The application will automatically read the environment variable
 `GITHUB_TOKEN`, but it can also be given when invoking the application with the `-t` or `--token` flag.
+
 ### List Issues & Pull Requests
-By default, simply invoking the name of the binary, `giss`, will list issues in the current repo. If the command is not
-invoked from a Git repository, an explicit repository will have to given as an argument.
+By default, simply invoking the name of the binary, `giss`, will list issues and pull requets in the current repo.
+If the command is not invoked from a Git repository, an explicit repository will have to given as an argument.
 
 - `giss` - List open issues in current repo
 - `giss mantono/giss` - List open issues in repository _giss_ that belongs to user/organization _mantono_
 - `giss apple` - List open issues in any repository in organization _apple_
 - `giss apple microsoft google` - List open issues in any repository in organizations _apple_, _microsoft_ and _google_
+- `giss rust-lang/rust apple/swift golang/go` - List open issues and pull requests in repositories for rust, swift and go
 - `giss -c` - List only closed issues and pull requests in current repo
 - `giss -A` - List both open and closed issues and pull requests in current repo
 - `giss -a` - List only open issues and pull requests assigned to user\* in current repo
@@ -68,10 +70,9 @@ OPTIONS:
 
 ARGS:
     <target>...
-            Name of the targets for the action. Can be either a single repository or one or multiple organizations or
-            owners. Any repository specified must be qualified with the owner or organization name. For example
-            'org/repo'. If action is 'create' then only a repository will be accepted. When no target is specified,
-            repository in current directory will be used, if possible.
+            Name of the targets for the action. Can be a combination of one or several repositories, organizations or
+            users. Any repository specified must be qualified with the owner or organization name. For example
+            'org/repo'. When no target is specified, repository in current directory will be used, if possible.
 ```
 
 ## Building

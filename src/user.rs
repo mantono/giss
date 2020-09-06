@@ -1,9 +1,10 @@
-use crate::GITHUB_API_V3_URL;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
+
+const GITHUB_API_V3_URL: &str = "https://api.github.com";
 
 #[derive(Debug, Deserialize)]
 pub struct User {

@@ -16,10 +16,9 @@ mod user;
 
 use args::{parse_args, read_repo_from_file};
 use itertools::Itertools;
-use list::{list_issues, FilterConfig};
+use list::FilterConfig;
 use logger::setup_logging;
-
-const GITHUB_API_V3_URL: &str = "https://api.github.com";
+use std::fmt;
 
 fn main() {
     let current_repo: String = read_repo_from_file();
@@ -34,7 +33,7 @@ fn main() {
     let config = FilterConfig::from_args(&args);
 
     log::debug!("Config: {:?}", config);
-    list_issues(&user, &targets, &token, &config)
+    list::list_issues(&user, &targets, &token, &config)
 }
 
 pub enum Target {
@@ -61,18 +60,13 @@ impl Target {
             }
         }
     }
+}
 
-    fn is_repo(&self) -> bool {
+impl fmt::Display for Target {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Target::Organization { .. } => false,
-            Target::Repository { .. } => true,
-        }
-    }
-
-    fn as_org(&self) -> Option<String> {
-        match self {
-            Target::Organization { name } => Some(name.clone()),
-            Target::Repository { .. } => None,
+            Target::Organization { name } => write!(f, "org:{}", name),
+            Target::Repository { owner, name } => write!(f, "repo:{}/{}", owner, name),
         }
     }
 }
@@ -91,18 +85,10 @@ impl Clone for Target {
 
 fn validate_targets(targets: Vec<&str>) -> Result<Vec<Target>, &str> {
     let targets: Vec<Target> = targets.iter().unique().map(|t| Target::new(t)).collect();
-    let orgs: Vec<Target> = targets.iter().filter(|t| !t.is_repo()).cloned().collect();
-    let repos: Vec<Target> = targets.iter().filter(|t| t.is_repo()).cloned().collect();
 
     if targets.is_empty() {
         Result::Err("No targets specified")
-    } else if !orgs.is_empty() && !repos.is_empty() {
-        Result::Err("Cannot give organizations and repositories at the same time")
-    } else if repos.len() > 1 {
-        Result::Err("Cannot give multiple repositories")
-    } else if !orgs.is_empty() {
-        Ok(orgs)
     } else {
-        Ok(repos)
+        Ok(targets)
     }
 }

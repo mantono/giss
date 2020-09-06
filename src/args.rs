@@ -9,7 +9,7 @@ pub fn parse_args(current_repo: &str) -> ArgMatches {
         .takes_value(true)
         .multiple(true)
         .help("Name of target(s)")
-        .long_help("Name of the targets for the action. Can be either a single repository or one or multiple organizations or owners. Any repository specified must be qualified with the owner or organization name. For example 'org/repo'. If action is 'create' then only a repository will be accepted. When no target is specified, repository in current directory will be used, if possible.")
+        .long_help("Name of the targets for the action. Can be a combination of one or several repositories, organizations or users. Any repository specified must be qualified with the owner or organization name. For example 'org/repo'. When no target is specified, repository in current directory will be used, if possible.")
         .validator(move |i| {
             if target_regex.is_match(&i) {
                 Ok(())
