@@ -71,6 +71,7 @@ impl SearchQuery for SearchIssues {
 
         let search_query: String = parts.join(" ");
 
+        log::debug!("Search query: '{}'", search_query);
         GraphQLQuery {
             variables: json!({
                 "searchQuery": search_query,

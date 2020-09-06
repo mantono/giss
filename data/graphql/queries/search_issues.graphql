@@ -1,4 +1,8 @@
 query SearchIssues($searchQuery: String!, $limit: Int = 10) {
+    viewer {
+        login
+        id
+    }
     search(query: $searchQuery, type: ISSUE, first: $limit) {
         edges {
             node {
@@ -31,6 +35,9 @@ fragment issueFields on Issue {
     repository {
         nameWithOwner
     }
+    comments {
+        totalCount
+    }
 }
 
 fragment pullRequestFields on PullRequest {
@@ -46,6 +53,17 @@ fragment pullRequestFields on PullRequest {
             login
         }
     }
+    reviewRequests(first: 10) {
+        totalCount
+        nodes {
+            id
+            pullRequest {
+                author {
+                    login
+                }
+            }
+        }
+    }
     labels(first: 10) {
         nodes {
             name
@@ -53,5 +71,8 @@ fragment pullRequestFields on PullRequest {
     }
     repository {
         nameWithOwner
+    }
+    comments {
+        totalCount
     }
 }

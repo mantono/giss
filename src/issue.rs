@@ -8,7 +8,14 @@ pub struct Root {
 
 #[derive(Debug, Deserialize)]
 pub struct Data {
+    pub viewer: Viewer,
     pub search: Search,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Viewer {
+    pub login: String,
+    pub id: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -32,11 +39,31 @@ pub struct Issue {
     pub body: Option<String>,
     #[serde(alias = "updatedAt")]
     pub updated_at: String,
+    #[serde(alias = "issueState")]
+    #[serde(alias = "pullRequestState")]
     pub state: ghrs::State,
     pub comments: Comments,
     pub assignees: AssigneeNode,
     pub labels: LabelNode,
     pub repository: Repository,
+    pub review_request: Option<Vec<IdNode>>,
+}
+
+impl Issue {
+    pub fn user_has_review_req(&self, user: &str) -> bool {
+        dbg!(user);
+        if self.review_request.is_none() {
+            return false;
+        }
+
+        self.review_request
+            .as_ref()
+            .unwrap()
+            .iter()
+            .map(|node: &IdNode| node.nodes.clone())
+            .flatten()
+            .any(|node: UserId| node.id == user)
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -56,10 +83,7 @@ pub struct IssueV3 {
 
 impl IssueV3 {
     pub fn is_pull_request(&self) -> bool {
-        match self.pull_request {
-            Some(_) => true,
-            None => false,
-        }
+        self.pull_request.is_some()
     }
 }
 
@@ -98,6 +122,16 @@ pub struct Comments {
 #[derive(Debug, Deserialize)]
 pub struct AssigneeNode {
     pub nodes: Vec<Assignee>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct IdNode {
+    pub nodes: Vec<UserId>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct UserId {
+    pub id: String,
 }
 
 impl ghrs::Closeable for Issue {
