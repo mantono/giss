@@ -7,6 +7,7 @@ extern crate regex;
 
 mod api;
 mod args;
+mod dbg;
 mod github_resources;
 mod issue;
 mod list;
@@ -15,6 +16,7 @@ mod search;
 mod user;
 
 use args::{parse_args, read_repo_from_file};
+use dbg::dbg_info;
 use itertools::Itertools;
 use list::FilterConfig;
 use logger::setup_logging;
@@ -23,6 +25,12 @@ use std::fmt;
 fn main() {
     let current_repo: String = read_repo_from_file();
     let args: clap::ArgMatches = parse_args(&current_repo);
+
+    if args.is_present("debug") {
+        println!("{}", dbg_info());
+        std::process::exit(0);
+    }
+
     let verbosity_level: u8 = args.value_of("verbosity").unwrap().parse::<u8>().unwrap();
     setup_logging(verbosity_level);
 

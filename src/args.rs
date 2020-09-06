@@ -105,6 +105,13 @@ pub fn parse_args(current_repo: &str) -> ArgMatches {
         .help("Set verbosity level, 0 - 5")
         .long_help("Set the verbosity level, from 0 (least amount of output) to 5 (most verbose). Note that logging level configured via RUST_LOG overrides this setting.");
 
+    let debug = Arg::with_name("debug")
+        .takes_value(false)
+        .short("D")
+        .long("debug")
+        .help("Print debug information")
+        .long_help("Print debug information about current build for binary, useful for when an issue is encountered and reported");
+
     let args: ArgMatches = App::new(crate_name!())
         .about("Command line tool for listing GitHub issues and pull requests")
         .version(crate_version!())
@@ -120,6 +127,7 @@ pub fn parse_args(current_repo: &str) -> ArgMatches {
         .arg(pull_requests)
         .arg(review_requests)
         .arg(verbosity)
+        .arg(debug)
         .get_matches();
 
     args

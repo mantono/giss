@@ -5,6 +5,7 @@ authors = ["Anton Österberg <anton.osterberg@protonmail.com>"]
 edition = "2018"
 include = ["src/**/*", "data/**/*"]
 publish = false
+build = "build.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -21,3 +22,9 @@ sha2 = "0.8.0"
 itertools = "0.8"
 log = "0.4"
 env_logger = "0.7"
+
+[build-dependencies]
+built = { version = "0.4", features = ["git2"] }
+
+[profile.release]
+lto = true
