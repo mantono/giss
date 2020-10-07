@@ -101,8 +101,13 @@ pub fn list_issues(user: &str, targets: &[Target], token: &str, config: &FilterC
 
     let issues: Vec<&Issue> = issues.data.search.edges.iter().map(|n| &n.node).collect();
 
+    let print_repo: bool = match (targets.len(), targets.first().unwrap()) {
+        (1, Target::Repository { .. }) => false,
+        _ => true,
+    };
+
     for issue in issues {
-        print_issue(&issue, true, use_colors)
+        print_issue(&issue, print_repo, use_colors)
     }
 }
 
