@@ -2,6 +2,8 @@ use crate::issue::{Assignee, Issue, Label, Root};
 use crate::search::{GraphQLQuery, SearchIssues, SearchQuery, Sorting, Type};
 use crate::Target;
 use core::fmt;
+use std::io::Write;
+use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 #[derive(Debug)]
 pub struct FilterConfig {
@@ -59,7 +61,7 @@ impl std::fmt::Display for FilterState {
     }
 }
 
-pub fn list_issues(user: &str, targets: &[Target], token: &str, config: &FilterConfig) {
+pub fn list_issues(user: &str, targets: &[Target], token: &str, config: &FilterConfig, use_colors: bool) {
     let query: SearchIssues = SearchIssues {
         archived: false,
         assignee: if config.assigned_only {
@@ -100,11 +102,11 @@ pub fn list_issues(user: &str, targets: &[Target], token: &str, config: &FilterC
     let issues: Vec<&Issue> = issues.data.search.edges.iter().map(|n| &n.node).collect();
 
     for issue in issues {
-        print_issue(&issue, true)
+        print_issue(&issue, true, use_colors)
     }
 }
 
-fn print_issue(issue: &Issue, print_repo: bool) {
+fn print_issue(issue: &Issue, print_repo: bool, use_colors: bool) {
     let title: String = truncate(issue.title.clone(), 50);
     let assignees: String = issue
         .assignees
@@ -130,14 +132,33 @@ fn print_issue(issue: &Issue, print_repo: bool) {
         .collect::<Vec<String>>()
         .join(", ");
 
-    let extra: String = vec![repo, title, assignees, labels]
-        .iter()
-        .filter(|i| !i.is_empty())
-        .cloned()
-        .collect::<Vec<String>>()
-        .join(" | ");
+    let color_choice = match use_colors {
+        true => ColorChoice::Always,
+        false => ColorChoice::Never,
+    };
 
-    println!("#{} {}", issue.number, extra);
+    let mut stdout = StandardStream::stdout(color_choice);
+
+    if print_repo {
+        write!(&mut stdout, "#{} {}", issue.number, repo).unwrap();
+    } else {
+        write!(&mut stdout, "#{}", issue.number).unwrap();
+    }
+
+    write(&mut stdout, " | ", Some(Color::Green));
+    write(&mut stdout, &title, None);
+
+    if !assignees.is_empty() {
+        write(&mut stdout, " | ", Some(Color::Green));
+        write(&mut stdout, &assignees, Some(Color::Cyan));
+    }
+
+    if !labels.is_empty() {
+        write(&mut stdout, " | ", Some(Color::Green));
+        write(&mut stdout, &labels, Some(Color::Magenta));
+    }
+
+    write(&mut stdout, "\n", None);
 }
 
 fn truncate(string: String, max_length: usize) -> String {
@@ -147,4 +168,9 @@ fn truncate(string: String, max_length: usize) -> String {
     } else {
         string
     }
+}
+
+fn write(stream: &mut StandardStream, content: &str, color: Option<Color>) {
+    stream.set_color(ColorSpec::new().set_fg(color)).unwrap();
+    write!(stream, "{}", content).unwrap();
 }

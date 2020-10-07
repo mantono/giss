@@ -88,6 +88,12 @@ pub fn parse_args(current_repo: &str) -> ArgMatches {
         .help("Show pull requests where user is request to review")
         .long_help("Only show pull requests where the user has been requested to review it");
 
+    let colors = Arg::with_name("colors")
+        .long("colors")
+        .short("C")
+        .help("Enable colors")
+        .long_help("Enable output with colors");
+
     let verbosity = Arg::with_name("verbosity")
         .takes_value(true)
         .default_value("1")
@@ -126,6 +132,7 @@ pub fn parse_args(current_repo: &str) -> ArgMatches {
         .arg(issues)
         .arg(pull_requests)
         .arg(review_requests)
+        .arg(colors)
         .arg(verbosity)
         .arg(debug)
         .get_matches();

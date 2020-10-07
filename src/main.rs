@@ -39,9 +39,10 @@ fn main() {
     let targets: Vec<Target> = validate_targets(targets).expect("Must have valid target(s)");
     let user: String = fetch_username(&token);
     let config = FilterConfig::from_args(&args);
+    let colors: bool = args.is_present("colors");
 
     log::debug!("Config: {:?}", config);
-    list::list_issues(&user, &targets, &token, &config)
+    list::list_issues(&user, &targets, &token, &config, colors)
 }
 
 pub enum Target {
