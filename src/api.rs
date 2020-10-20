@@ -1,12 +1,13 @@
 pub(crate) mod v4 {
     use lazy_static::lazy_static;
+    use reqwest::blocking::Client;
     use std::time::Duration;
 
     const GITHUB_API_V4_URL: &str = "https://api.github.com/graphql";
     const USER_AGENT: &str = "giss";
 
     lazy_static! {
-        pub static ref CLIENT: reqwest::Client = reqwest::Client::builder()
+        pub static ref CLIENT: Client = Client::builder()
             .connect_timeout(Duration::from_secs(10))
             .timeout(std::time::Duration::from_secs(15))
             .build()
@@ -16,7 +17,7 @@ pub(crate) mod v4 {
     pub fn request<T: serde::de::DeserializeOwned>(token: &str, query: crate::search::GraphQLQuery) -> Result<T, u16> {
         log::debug!("{}", query.variables);
 
-        let request: reqwest::Request = CLIENT
+        let request: reqwest::blocking::Request = CLIENT
             .post(GITHUB_API_V4_URL)
             .header("User-Agent", USER_AGENT)
             .bearer_auth(token)
@@ -24,7 +25,7 @@ pub(crate) mod v4 {
             .build()
             .expect("Failed to build query");
 
-        let mut response: reqwest::Response = CLIENT.execute(request).unwrap();
+        let response: reqwest::blocking::Response = CLIENT.execute(request).unwrap();
         let status_code: u16 = response.status().as_u16();
         match status_code {
             200 => {

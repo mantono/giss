@@ -1,3 +1,4 @@
+use crate::api::v4::CLIENT;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use std::fs::File;
@@ -14,8 +15,7 @@ pub struct User {
 
 fn api_lookup_username(token: &str) -> User {
     let url: String = [GITHUB_API_V3_URL, "user"].join("/");
-    let client = reqwest::Client::new();
-    let mut response: reqwest::Response = client
+    let response: reqwest::blocking::Response = CLIENT
         .get(&url)
         .bearer_auth(token)
         .send()
