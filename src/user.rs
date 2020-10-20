@@ -52,7 +52,7 @@ fn hash_token(token: &str) -> String {
 }
 
 fn get_users_dir() -> PathBuf {
-    let mut path: PathBuf = dirs::home_dir().expect("Cannot find home dir");
+    let mut path: PathBuf = dirs_next::home_dir().expect("Cannot find home dir");
     path.push([".config", "giss", "usernames"].join("/"));
     path
 }
