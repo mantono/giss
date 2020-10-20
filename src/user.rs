@@ -47,7 +47,6 @@ fn save_username(token: &str, username: &str) -> Result<(), std::io::Error> {
 fn hash_token(token: &str) -> String {
     let mut hasher = Sha256::new();
     hasher.input(token);
-    //  format!("{:02x}", hasher.result().as_slice().iter().format(""))
     format!("{:02x}", hasher.result())
 }
 
