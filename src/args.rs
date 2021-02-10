@@ -140,9 +140,12 @@ pub fn parse_args(current_repo: &str) -> ArgMatches {
     args
 }
 
-pub fn read_repo_from_file() -> String {
+pub fn read_repo_from_file() -> Option<String> {
     let current_path: &Path = Path::new(".");
-    let repo_root: PathBuf = traverse(&current_path);
+    let repo_root: PathBuf = match traverse(&current_path) {
+        Some(root) => root,
+        None => return None,
+    };
     let config_file: PathBuf = repo_root.join(".git").join("config");
     log::debug!("Using Git config file: '{:?}'", config_file);
     let file_content: String = fs::read_to_string(config_file).expect("Could not find a git config");
@@ -155,10 +158,11 @@ pub fn read_repo_from_file() -> String {
         .split_terminator(':')
         .last()
         .expect("No match");
-    repo.trim_end_matches(".git").to_string()
+
+    Some(repo.trim_end_matches(".git").to_string())
 }
 
-fn traverse(path: &Path) -> PathBuf {
+fn traverse(path: &Path) -> Option<PathBuf> {
     let path_full: PathBuf = path
         .to_path_buf()
         .canonicalize()
@@ -166,10 +170,11 @@ fn traverse(path: &Path) -> PathBuf {
 
     let git_config: PathBuf = path_full.join(".git").join("config");
     if git_config.exists() {
-        return path_full;
-    }
-    match path_full.parent() {
-        Some(parent) => traverse(parent),
-        None => panic!("No .git directory found in hierarchy"),
+        Some(path_full)
+    } else {
+        match path_full.parent() {
+            Some(parent) => traverse(parent),
+            None => None,
+        }
     }
 }
