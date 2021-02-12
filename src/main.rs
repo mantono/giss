@@ -22,27 +22,38 @@ use crate::structopt::StructOpt;
 use crate::user::fetch_username;
 use args::{parse_args, read_repo_from_file};
 use cfg::Config;
+use clap::App;
 use dbg::dbg_info;
 use list::FilterConfig;
 use logger::setup_logging;
+use target::Target;
 
-fn main() {
-    let cfg = Config::from_args();
+fn main() -> Result<(), AppErr> {
+    let cfg: Config = Config::from_args();
 
     if cfg.print_debug() {
         println!("{}", dbg_info());
-        std::process::exit(0);
+        return Ok(());
     }
 
-    setup_logging(&cfg.verbosity);
+    setup_logging(cfg.verbosity());
 
-    let token: String = args.value_of("token").expect("No token was present").to_string();
-    let targets: Vec<&str> = args.values_of("target").expect("Target must be present").collect();
-    let targets: Vec<Target> = validate_targets(targets).expect("Must have valid target(s)");
+    let token: String = cfg.token()?;
+    let targets: Vec<Target> = cfg.target()?;
     let user: String = fetch_username(&token);
     let config = FilterConfig::from_args(&args);
     let colors: bool = args.is_present("colors");
 
     log::debug!("Config: {:?}", config);
-    list::list_issues(&user, &targets, &token, &config, colors)
+    list::list_issues(&user, &targets, &token, &config, colors);
+
+    Ok(())
+}
+
+#[derive(Debug)]
+enum AppErr {
+    MissingToken,
+    TokenWriteError,
+    NoTarget,
+    InvalidTarget(String),
 }

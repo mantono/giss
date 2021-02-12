@@ -3,7 +3,7 @@ use std::{
     str::FromStr,
 };
 
-use crate::{args::read_repo_from_file, target::Target};
+use crate::{args::read_repo_from_file, target::Target, AppErr};
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
@@ -57,6 +57,12 @@ pub struct Config {
     #[structopt(short, long)]
     review_requests: bool,
 
+    /// Username
+    ///
+    /// Username to use for the query. Will default to the username for the user of the token.
+    #[structopt(short, long, default_value)]
+    user: Username,
+
     /// Enable colors
     ///
     /// Enable output with colors
@@ -67,7 +73,7 @@ pub struct Config {
     ///
     /// Set the verbosity level, from 0 (least amount of output) to 5 (most verbose). Note that
     /// logging level configured via RUST_LOG overrides this setting.
-    #[structopt(short, long)]
+    #[structopt(short, long, default_value = "1")]
     verbosity: Verbosity,
 
     /// Prind debug information
@@ -108,21 +114,21 @@ impl FromStr for Verbosity {
 }
 
 impl Config {
-    pub fn token(&self) -> Option<String> {
-        self.token
+    pub fn token(&self) -> Result<String, AppErr> {
+        self.token.ok_or(AppErr::MissingToken)
     }
 
-    pub fn target(&self) -> Vec<Target> {
+    pub fn target(&self) -> Result<Vec<Target>, AppErr> {
         if self.target.is_empty() {
             match read_repo_from_file() {
                 Some(repo) => match repo.parse::<Target>() {
-                    Ok(target) => vec![target],
-                    Err(e) => panic!("Unable to convert target"),
+                    Ok(target) => Ok(vec![target]),
+                    Err(_) => Err(AppErr::InvalidTarget(repo)),
                 },
-                None => panic!("No target found"),
+                None => Err(AppErr::NoTarget),
             }
         } else {
-            self.target
+            Ok(self.target)
         }
     }
 
@@ -154,6 +160,10 @@ impl Config {
 
     pub fn pulls(&self) -> bool {
         self.pull_requests || self.all()
+    }
+
+    pub fn verbosity(&self) -> &Verbosity {
+        &self.verbosity
     }
 
     pub fn print_debug(&self) -> bool {
