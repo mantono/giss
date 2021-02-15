@@ -1,10 +1,8 @@
-use std::{
-    convert::{TryFrom, TryInto},
-    str::FromStr,
-};
+use std::str::FromStr;
 
-use crate::{args::read_repo_from_file, target::Target, AppErr};
+use crate::{args::read_repo_from_file, list::StateFilter, target::Target, user::Username, AppErr};
 use structopt::StructOpt;
+use termcolor::ColorChoice;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "giss", author, about)]
@@ -29,8 +27,9 @@ pub struct Config {
     #[structopt(short, long)]
     assigned: bool,
 
+    /// Limit the number of issues or pull requests to list
     #[structopt(short = "n", long, default_value = "10")]
-    limit: usize,
+    limit: u32,
 
     /// Show open issues or pull requests
     ///
@@ -60,14 +59,21 @@ pub struct Config {
     /// Username
     ///
     /// Username to use for the query. Will default to the username for the user of the token.
-    #[structopt(short, long, default_value)]
-    user: Username,
+    #[structopt(short, long)]
+    user: Option<Username>,
 
-    /// Enable colors
+    /// Set use of colors
     ///
-    /// Enable output with colors
-    #[structopt(short = "C", long)]
-    colors: bool,
+    /// Enable or disable output with colors. By default, the application will
+    /// try to figure out if colors are supported by the terminal in the current context, and use it
+    /// if possible.
+    /// Possible values are
+    ///
+    /// - on / true\n
+    /// - off / false
+    /// - auto
+    #[structopt(long = "colors", default_value = "auto")]
+    colors: Flag,
 
     /// Set verbosity level, 0 - 5
     ///
@@ -84,10 +90,24 @@ pub struct Config {
     debug: bool,
 }
 
-pub enum StateFilter {
-    Open,
-    Closed,
-    All,
+#[derive(Debug, Copy, Clone)]
+enum Flag {
+    True,
+    False,
+    Auto,
+}
+
+impl FromStr for Flag {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "true" | "on" => Ok(Flag::True),
+            "false" | "off" => Ok(Flag::False),
+            "auto" => Ok(Flag::Auto),
+            _ => Err(format!("Unrecognized option {}", s)),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -115,7 +135,17 @@ impl FromStr for Verbosity {
 
 impl Config {
     pub fn token(&self) -> Result<String, AppErr> {
-        self.token.ok_or(AppErr::MissingToken)
+        self.token.clone().ok_or(AppErr::MissingToken)
+    }
+
+    pub fn username(&self) -> Option<Username> {
+        match &self.user {
+            Some(user) => Some(user.clone()),
+            None => match self.token.clone() {
+                Some(token) => Username::from_token(&token).ok(),
+                None => None,
+            },
+        }
     }
 
     pub fn target(&self) -> Result<Vec<Target>, AppErr> {
@@ -128,11 +158,11 @@ impl Config {
                 None => Err(AppErr::NoTarget),
             }
         } else {
-            Ok(self.target)
+            Ok(self.target.clone())
         }
     }
 
-    pub fn limit(&self) -> usize {
+    pub fn limit(&self) -> u32 {
         self.limit
     }
 
@@ -144,6 +174,10 @@ impl Config {
         } else {
             StateFilter::Open
         }
+    }
+
+    pub fn assigned_only(&self) -> bool {
+        self.assigned
     }
 
     fn all(&self) -> bool {
@@ -166,7 +200,15 @@ impl Config {
         &self.verbosity
     }
 
+    pub fn colors(&self) -> ColorChoice {
+        match self.colors {
+            Flag::True => ColorChoice::Always,
+            Flag::False => ColorChoice::Never,
+            Flag::Auto => ColorChoice::Auto,
+        }
+    }
+
     pub fn print_debug(&self) -> bool {
-        self.print_debug()
+        self.debug
     }
 }

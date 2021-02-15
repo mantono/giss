@@ -19,14 +19,13 @@ mod target;
 mod user;
 
 use crate::structopt::StructOpt;
-use crate::user::fetch_username;
-use args::{parse_args, read_repo_from_file};
 use cfg::Config;
-use clap::App;
 use dbg::dbg_info;
 use list::FilterConfig;
 use logger::setup_logging;
 use target::Target;
+use termcolor::ColorChoice;
+use user::Username;
 
 fn main() -> Result<(), AppErr> {
     let cfg: Config = Config::from_args();
@@ -40,20 +39,21 @@ fn main() -> Result<(), AppErr> {
 
     let token: String = cfg.token()?;
     let targets: Vec<Target> = cfg.target()?;
-    let user: String = fetch_username(&token);
-    let config = FilterConfig::from_args(&args);
-    let colors: bool = args.is_present("colors");
+    let user: Option<Username> = cfg.username();
+    let colors: ColorChoice = cfg.colors();
+    log::debug!("Config: {:?}", &cfg);
 
-    log::debug!("Config: {:?}", config);
-    list::list_issues(&user, &targets, &token, &config, colors);
+    let filter: FilterConfig = cfg.into();
+    list::list_issues(&user, &targets, &token, &filter, colors);
 
     Ok(())
 }
 
 #[derive(Debug)]
-enum AppErr {
+pub enum AppErr {
     MissingToken,
     TokenWriteError,
     NoTarget,
     InvalidTarget(String),
+    ApiError,
 }

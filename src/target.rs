@@ -16,10 +16,14 @@ impl FromStr for Target {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let parts: Vec<String> = TARGET.find_iter(s).map(|x| x.as_str().to_string()).collect();
+        let parts: Vec<String> = TARGET
+            .find_iter(s)
+            .into_iter()
+            .map(|x| x.as_str().to_string())
+            .collect();
         match parts.len() {
-            1 => Ok(Target::Organization(*parts.first().unwrap())),
-            2 => Ok(Target::Repository(*parts.first().unwrap(), *parts.last().unwrap())),
+            1 => Ok(Target::Organization(parts[0].clone())),
+            2 => Ok(Target::Repository(parts[0].clone(), parts[1].clone())),
             _ => Err(format!("Could not resolve a valid target from '{}'", s)),
         }
     }

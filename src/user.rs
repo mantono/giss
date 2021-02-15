@@ -1,9 +1,9 @@
 use crate::{api::v4::CLIENT, AppErr};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
-use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
+use std::{fs::File, str::FromStr};
 
 const GITHUB_API_V3_URL: &str = "https://api.github.com";
 
@@ -13,7 +13,7 @@ pub struct User {
     pub id: u64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Username(pub String);
 
 impl Username {
@@ -29,9 +29,24 @@ impl Username {
     }
 }
 
+impl FromStr for Username {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Username(s.to_string()))
+    }
+}
+
 impl From<std::io::Error> for AppErr {
     fn from(_: std::io::Error) -> Self {
         AppErr::TokenWriteError
+    }
+}
+
+impl From<reqwest::Error> for AppErr {
+    fn from(e: reqwest::Error) -> Self {
+        log::error!("Request failed {}", e);
+        AppErr::ApiError
     }
 }
 
