@@ -11,10 +11,11 @@ build = "build.rs"
 
 [dependencies]
 clap = "2.33"
+structopt = "0.3.21"
 dirs-next = "1.0.2"
 itertools = "0.8"
 lazy_static = "1.4"
-regex = "1"
+regex = "1.3"
 reqwest = { version = "0.10", features = [ "blocking", "json" ] }
 serde = "1.0"
 serde_json = "1.0"

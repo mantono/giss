@@ -1,4 +1,4 @@
-use crate::list::FilterState;
+use crate::list::StateFilter;
 use crate::Target;
 use itertools::Itertools;
 use serde::Serialize;
@@ -39,7 +39,7 @@ pub enum Type {
 }
 
 pub struct SearchIssues {
-    pub state: FilterState,
+    pub state: StateFilter,
     pub assignee: Option<String>,
     pub review_requested: Option<String>,
     pub archived: bool,
@@ -93,9 +93,9 @@ impl SearchQuery for SearchIssues {
 impl SearchIssues {
     fn state(&self) -> Option<String> {
         match self.state {
-            FilterState::All => None,
-            FilterState::Open => Some(String::from("state:open")),
-            FilterState::Closed => Some(String::from("state:closed")),
+            StateFilter::All => None,
+            StateFilter::Open => Some(String::from("state:open")),
+            StateFilter::Closed => Some(String::from("state:closed")),
         }
     }
 

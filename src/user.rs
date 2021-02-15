@@ -1,9 +1,9 @@
-use crate::api::v4::CLIENT;
+use crate::{api::v4::CLIENT, AppErr};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
-use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
+use std::{fs::File, str::FromStr};
 
 const GITHUB_API_V3_URL: &str = "https://api.github.com";
 
@@ -13,34 +13,55 @@ pub struct User {
     pub id: u64,
 }
 
-fn api_lookup_username(token: &str) -> User {
-    let url: String = [GITHUB_API_V3_URL, "user"].join("/");
-    let response: reqwest::blocking::Response = CLIENT
-        .get(&url)
-        .bearer_auth(token)
-        .send()
-        .expect("Request to Github API failed when fetching user name");
+#[derive(Debug, Clone)]
+pub struct Username(pub String);
 
-    response.json::<User>().expect("Unable to parse GitHub user")
-}
-
-pub fn fetch_username(token: &str) -> String {
-    match get_saved_username(token) {
-        Some(username) => username,
-        None => {
-            let username: String = api_lookup_username(token).login;
-            save_username(token, &username).expect("Unable to save username");
-            username
+impl Username {
+    pub fn from_token(token: &str) -> Result<Username, AppErr> {
+        match get_saved_username(token) {
+            Some(username) => Ok(Username(username)),
+            None => {
+                let username: String = api_lookup_username(token)?.login;
+                save_username(token, &username)?;
+                Ok(Username(username))
+            }
         }
     }
+}
+
+impl FromStr for Username {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Username(s.to_string()))
+    }
+}
+
+impl From<std::io::Error> for AppErr {
+    fn from(_: std::io::Error) -> Self {
+        AppErr::TokenWriteError
+    }
+}
+
+impl From<reqwest::Error> for AppErr {
+    fn from(e: reqwest::Error) -> Self {
+        log::error!("Request failed {}", e);
+        AppErr::ApiError
+    }
+}
+
+fn api_lookup_username(token: &str) -> Result<User, AppErr> {
+    let url: String = [GITHUB_API_V3_URL, "user"].join("/");
+    let response: reqwest::blocking::Response = CLIENT.get(&url).bearer_auth(token).send()?;
+    Ok(response.json::<User>()?)
 }
 
 fn save_username(token: &str, username: &str) -> Result<(), std::io::Error> {
     let token_hash: String = hash_token(token);
     let mut path: PathBuf = get_users_dir();
-    std::fs::create_dir_all(&path).expect("Unable to create path");
+    std::fs::create_dir_all(&path)?;
     path.push(token_hash);
-    let mut file: File = File::create(&path).expect("Unable to create file");
+    let mut file: File = File::create(&path)?;
     file.write_all(username.as_bytes())
 }
 

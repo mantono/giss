@@ -1,6 +1,9 @@
-use crate::issue::{Assignee, Issue, Label, Root};
 use crate::search::{GraphQLQuery, SearchIssues, SearchQuery, Sorting, Type};
-use crate::Target;
+use crate::{
+    cfg::Config,
+    issue::{Assignee, Issue, Label, Root},
+};
+use crate::{user::Username, Target};
 use core::fmt;
 use std::io::Write;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
@@ -11,64 +14,52 @@ pub struct FilterConfig {
     pull_requests: bool,
     review_requests: bool,
     issues: bool,
-    state: FilterState,
+    state: StateFilter,
     limit: u32,
 }
 
-impl FilterConfig {
-    pub fn from_args(args: &clap::ArgMatches) -> FilterConfig {
-        let state: FilterState = if args.is_present("closed") {
-            FilterState::Closed
-        } else if args.is_present("all") {
-            FilterState::All
-        } else {
-            FilterState::Open
-        };
-        let assigned_only: bool = args.is_present("assigned");
-
-        let pull_requests: bool = args.is_present("pull requests");
-        let review_requests: bool = args.is_present("review requests");
-        let issues: bool = args.is_present("issues");
-
-        let limit: u32 = args.value_of("limit").unwrap().parse().expect("Invalid number");
-
+impl From<Config> for FilterConfig {
+    fn from(cfg: Config) -> Self {
         FilterConfig {
-            assigned_only,
-            pull_requests,
-            review_requests,
-            issues,
-            state,
-            limit,
+            assigned_only: cfg.assigned_only(),
+            pull_requests: cfg.pulls(),
+            review_requests: cfg.reviews(),
+            issues: cfg.issues(),
+            state: cfg.state(),
+            limit: cfg.limit(),
         }
     }
 }
 
 #[derive(Eq, PartialEq, Debug, Copy, Clone)]
-pub enum FilterState {
+pub enum StateFilter {
     Open,
     Closed,
     All,
 }
 
-impl std::fmt::Display for FilterState {
+impl std::fmt::Display for StateFilter {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let output = match self {
-            FilterState::Open => "open",
-            FilterState::Closed => "closed",
-            FilterState::All => "all",
+            StateFilter::Open => "open",
+            StateFilter::Closed => "closed",
+            StateFilter::All => "all",
         };
         write!(f, "{}", output)
     }
 }
 
-pub fn list_issues(user: &str, targets: &[Target], token: &str, config: &FilterConfig, use_colors: bool) {
+pub fn list_issues(
+    user: &Option<Username>,
+    targets: &[Target],
+    token: &str,
+    config: &FilterConfig,
+    use_colors: ColorChoice,
+) {
+    let user: Option<String> = user.clone().map(|u| u.0);
     let query: SearchIssues = SearchIssues {
         archived: false,
-        assignee: if config.assigned_only {
-            Some(user.to_string())
-        } else {
-            None
-        },
+        assignee: if config.assigned_only { user.clone() } else { None },
         resource_type: match (config.issues, config.pull_requests, config.review_requests) {
             (true, false, false) => Some(Type::Issue),
             (false, true, false) => Some(Type::PullRequest),
@@ -79,11 +70,7 @@ pub fn list_issues(user: &str, targets: &[Target], token: &str, config: &FilterC
                 config.issues, config.pull_requests, config.review_requests
             ),
         },
-        review_requested: if config.review_requests {
-            Some(user.to_string())
-        } else {
-            None
-        },
+        review_requested: if config.review_requests { user.clone() } else { None },
         sort: (String::from("updated"), Sorting::Descending),
         state: config.state,
         targets: targets.to_vec(),
@@ -111,7 +98,7 @@ pub fn list_issues(user: &str, targets: &[Target], token: &str, config: &FilterC
     }
 }
 
-fn print_issue(issue: &Issue, print_repo: bool, use_colors: bool) {
+fn print_issue(issue: &Issue, print_repo: bool, use_colors: ColorChoice) {
     let title: String = truncate(issue.title.clone(), 50);
     let assignees: String = issue
         .assignees
@@ -137,12 +124,7 @@ fn print_issue(issue: &Issue, print_repo: bool, use_colors: bool) {
         .collect::<Vec<String>>()
         .join(", ");
 
-    let color_choice = match use_colors {
-        true => ColorChoice::Always,
-        false => ColorChoice::Never,
-    };
-
-    let mut stdout = StandardStream::stdout(color_choice);
+    let mut stdout = StandardStream::stdout(use_colors);
 
     if print_repo {
         write!(&mut stdout, "#{} {}", issue.number, repo).unwrap();
