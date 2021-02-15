@@ -67,11 +67,7 @@ pub struct Config {
     /// Enable or disable output with colors. By default, the application will
     /// try to figure out if colors are supported by the terminal in the current context, and use it
     /// if possible.
-    /// Possible values are
-    ///
-    /// - on / true\n
-    /// - off / false
-    /// - auto
+    /// Possible values are "on", "true", "off", "false", "auto".
     #[structopt(long = "colors", default_value = "auto")]
     colors: Flag,
 
