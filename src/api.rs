@@ -1,7 +1,9 @@
 pub(crate) mod v4 {
     use lazy_static::lazy_static;
-    use reqwest::blocking::Client;
+    use reqwest::Client;
     use std::time::Duration;
+
+    use super::ApiError;
 
     const GITHUB_API_V4_URL: &str = "https://api.github.com/graphql";
     const USER_AGENT: &str = "giss";
@@ -14,10 +16,13 @@ pub(crate) mod v4 {
             .unwrap();
     }
 
-    pub fn request<T: serde::de::DeserializeOwned>(token: &str, query: crate::search::GraphQLQuery) -> Result<T, u16> {
+    pub async fn request<T: serde::de::DeserializeOwned>(
+        token: &str,
+        query: crate::search::GraphQLQuery,
+    ) -> Result<T, ApiError> {
         log::debug!("{}", query.variables);
 
-        let request: reqwest::blocking::Request = CLIENT
+        let request: reqwest::Request = CLIENT
             .post(GITHUB_API_V4_URL)
             .header("User-Agent", USER_AGENT)
             .bearer_auth(token)
@@ -25,18 +30,32 @@ pub(crate) mod v4 {
             .build()
             .expect("Failed to build query");
 
-        let response: reqwest::blocking::Response = CLIENT.execute(request).unwrap();
+        let response: reqwest::Response = CLIENT.execute(request).await?;
         let status_code: u16 = response.status().as_u16();
         match status_code {
             200 => {
                 log::debug!("GitHub API: {}", status_code);
-                Ok(response.json().expect("Unable to parse body"))
+                Ok(response.json().await?)
             }
             _ => {
-                let error: String = response.text().unwrap_or_default();
+                let error: String = response.text().await?;
                 log::error!("GitHub API: {} - {}", status_code, error);
-                Err(status_code)
+                Err(ApiError::Response(status_code))
             }
         }
     }
+}
+
+impl From<reqwest::Error> for ApiError {
+    fn from(e: reqwest::Error) -> Self {
+        match e.status() {
+            Some(code) => ApiError::Response(code.as_u16()),
+            None => ApiError::NoResponse(e.to_string()),
+        }
+    }
+}
+
+pub enum ApiError {
+    NoResponse(String),
+    Response(u16),
 }

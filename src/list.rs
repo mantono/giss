@@ -1,20 +1,13 @@
+use crate::search::{GraphQLQuery, SearchIssues, SearchQuery, Sorting, Type};
 use crate::{
+    api::ApiError,
     cfg::Config,
-    issue::{Assignee, Issue, Label, Root},
+    issue::{Issue, Root},
     AppErr,
-};
-use crate::{
-    issue,
-    search::{GraphQLQuery, SearchIssues, SearchQuery, Sorting, Type},
 };
 use crate::{user::Username, Target};
 use core::fmt;
-use lazy_static::__Deref;
-use std::{
-    io::Write,
-    sync::mpsc::{SendError, Sender},
-};
-use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
+use std::sync::mpsc::{SendError, Sender};
 
 #[derive(Debug)]
 pub struct FilterConfig {
@@ -73,7 +66,7 @@ impl std::fmt::Display for StateFilter {
     }
 }
 
-pub fn list_issues(
+pub async fn list_issues(
     channel: Sender<Issue>,
     user: &Option<Username>,
     targets: &[Target],
@@ -85,7 +78,7 @@ pub fn list_issues(
 
     for req_type in config.types() {
         let query: SearchIssues = create_query(req_type, &user, targets, config);
-        let issues: Vec<Issue> = api_request(query, token)?;
+        let issues: Vec<Issue> = api_request(query, token).await?;
 
         for issue in issues {
             channel.send(issue)?;
@@ -96,11 +89,26 @@ pub fn list_issues(
 }
 
 fn create_query(kind: Type, user: &Option<String>, targets: &[Target], config: &FilterConfig) -> SearchIssues {
+    let assignee: Option<String> = match config.assigned_only {
+        false => None,
+        true => match kind {
+            Type::Issue | Type::PullRequest => user.clone(),
+            Type::ReviewRequest => None,
+        },
+    };
+
+    let review_requested: Option<String> = match config.review_requests {
+        false => None,
+        true => match kind {
+            Type::ReviewRequest => user.clone(),
+            Type::Issue | Type::PullRequest => None,
+        },
+    };
     SearchIssues {
         archived: false,
-        assignee: if config.assigned_only { user.clone() } else { None },
+        assignee,
         resource_type: Some(kind),
-        review_requested: if config.review_requests { user.clone() } else { None },
+        review_requested,
         sort: (String::from("updated"), Sorting::Descending),
         state: config.state,
         targets: targets.to_vec(),
@@ -114,18 +122,21 @@ impl From<SendError<Issue>> for AppErr {
     }
 }
 
-impl From<u16> for AppErr {
-    fn from(status: u16) -> Self {
-        match status {
-            429 => AppErr::RateLimited,
-            _ => AppErr::ApiError,
+impl From<ApiError> for AppErr {
+    fn from(err: ApiError) -> Self {
+        match err {
+            ApiError::NoResponse(_) => AppErr::ApiError,
+            ApiError::Response(code) => match code {
+                429 => AppErr::RateLimited,
+                _ => AppErr::ApiError,
+            },
         }
     }
 }
 
-fn api_request(search: SearchIssues, token: &str) -> Result<Vec<Issue>, u16> {
+async fn api_request(search: SearchIssues, token: &str) -> Result<Vec<Issue>, ApiError> {
     let query: GraphQLQuery = search.build();
-    let issues: Root = crate::api::v4::request(token, query)?;
+    let issues: Root = crate::api::v4::request(token, query).await?;
     let issues: Vec<Issue> = issues.data.search.edges.into_iter().map(|n| n.node).collect();
     Ok(issues)
 }

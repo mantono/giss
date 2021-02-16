@@ -1,8 +1,5 @@
 use std::{io::Write, sync::mpsc::RecvTimeoutError};
-use std::{
-    sync::mpsc::{channel, Receiver},
-    time::Duration,
-};
+use std::{sync::mpsc::Receiver, time::Duration};
 
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
@@ -14,18 +11,29 @@ use crate::{
 
 pub struct DisplayConfig {
     colors: ColorChoice,
+    limit: u32,
 }
 
 impl From<&Config> for DisplayConfig {
     fn from(cfg: &Config) -> Self {
-        DisplayConfig { colors: cfg.colors() }
+        DisplayConfig {
+            colors: cfg.colors(),
+            limit: cfg.limit(),
+        }
     }
 }
 
 pub fn display(channel: Receiver<Issue>, cfg: DisplayConfig) -> Result<(), AppErr> {
+    let mut limit: u32 = cfg.limit;
     loop {
+        if limit == 0 {
+            return Ok(());
+        }
         match channel.recv_timeout(Duration::from_secs(20)) {
-            Ok(issue) => print_issue(issue, true, &cfg),
+            Ok(issue) => {
+                print_issue(issue, true, &cfg);
+                limit -= 1;
+            }
             Err(e) => {
                 return match e {
                     RecvTimeoutError::Timeout => Err(AppErr::Timeout),

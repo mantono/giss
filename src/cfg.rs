@@ -138,7 +138,7 @@ impl Config {
         match &self.user {
             Some(user) => Some(user.clone()),
             None => match self.token.clone() {
-                Some(token) => Username::from_token(&token).ok(),
+                Some(token) => futures::executor::block_on(Username::from_token(&token)).ok(),
                 None => None,
             },
         }
@@ -177,7 +177,7 @@ impl Config {
     }
 
     fn all(&self) -> bool {
-        !self.issues && !self.pull_requests && !self.pull_requests
+        !self.issues && !self.pull_requests && !self.review_requests
     }
 
     pub fn issues(&self) -> bool {

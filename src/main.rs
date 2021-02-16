@@ -26,7 +26,7 @@ use issue::Issue;
 use list::FilterConfig;
 use logger::setup_logging;
 use target::Target;
-use termcolor::ColorChoice;
+use tokio::runtime::Runtime;
 use ui::DisplayConfig;
 use user::Username;
 
@@ -50,12 +50,12 @@ fn main() -> Result<(), AppErr> {
 
     let (send, recv) = std::sync::mpsc::channel::<Issue>();
 
-    std::thread::spawn(
-        move || match list::list_issues(send, &user, &targets, &token, &filter) {
-            Ok(_) => {}
+    Runtime::new().unwrap().block_on(async move {
+        match list::list_issues(send, &user, &targets, &token, &filter).await {
+            Ok(_) => log::debug!("API requests completed"),
             Err(e) => log::error!("{:?}", e),
-        },
-    );
+        }
+    });
 
     ui::display(recv, display)?;
 
