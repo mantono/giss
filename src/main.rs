@@ -14,6 +14,7 @@ mod github_resources;
 mod issue;
 mod list;
 mod logger;
+mod project;
 mod search;
 mod target;
 mod ui;

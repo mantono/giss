@@ -1,5 +1,5 @@
-use crate::list::StateFilter;
 use crate::Target;
+use crate::{list::StateFilter, project::Project};
 use itertools::Itertools;
 use serde::Serialize;
 use serde_json::json;
@@ -44,6 +44,7 @@ pub struct SearchIssues {
     pub review_requested: Option<String>,
     pub archived: bool,
     pub labels: Vec<String>,
+    pub project: Option<Project>,
     pub resource_type: Option<Type>,
     pub targets: Vec<Target>,
     pub sort: (String, Sorting),
@@ -72,6 +73,7 @@ impl SearchQuery for SearchIssues {
             self.archived(),
             self.users(),
             self.labels(),
+            self.project(),
             self.sort(),
         ]
         .iter()
@@ -127,6 +129,10 @@ impl SearchIssues {
         } else {
             Some(self.labels.iter().map(|l| format!("label:{}", l)).join(" "))
         }
+    }
+
+    fn project(&self) -> Option<String> {
+        self.project.clone().map(|p| format!("project:{}", p))
     }
 
     fn sort(&self) -> Option<String> {

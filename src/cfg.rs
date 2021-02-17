@@ -1,6 +1,6 @@
-use std::str::FromStr;
+use std::{fmt::Display, str::FromStr};
 
-use crate::{args::read_repo_from_file, list::StateFilter, target::Target, user::Username, AppErr};
+use crate::{args::read_repo_from_file, list::StateFilter, project::Project, target::Target, user::Username, AppErr};
 use structopt::StructOpt;
 use termcolor::ColorChoice;
 
@@ -49,6 +49,13 @@ pub struct Config {
     /// Only include issues, pull requests or review reuests which has (all) the given label(s).
     #[structopt(short, long)]
     labels: Vec<String>,
+
+    /// Filter by project
+    ///
+    /// Only include isses, pull request or review requests which is assoicated with the
+    /// given project.
+    #[structopt(short = "P", long)]
+    project: Option<Project>,
 
     /// List issues
     #[structopt(short, long)]
@@ -200,6 +207,10 @@ impl Config {
 
     pub fn label(&self) -> Vec<String> {
         self.labels.clone()
+    }
+
+    pub fn project(&self) -> Option<Project> {
+        self.project.clone()
     }
 
     pub fn verbosity(&self) -> &Verbosity {
