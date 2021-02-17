@@ -6,70 +6,97 @@ All commands requires a valid [GitHub API token](https://github.com/settings/tok
 `GITHUB_TOKEN`, but it can also be given when invoking the application with the `-t` or `--token` flag. The token does not need any permission for reading public repositories, but for private repositories is the `repo` permission required.
 
 ### List Issues & Pull Requests
-By default, simply invoking the name of the binary, `giss`, will list issues and pull requets in the current repo.
+By default, simply invoking the name of the binary, `giss`, will list tickets that are either
+- issues
+- pull requets
+- review requests
+
+in the current repo.
 If the command is not invoked from a Git repository, an explicit repository will have to given as an argument.
 
-- `giss` - List open issues in current repo
-- `giss mantono/giss` - List open issues in repository _giss_ that belongs to user/organization _mantono_
-- `giss apple` - List open issues in any repository in organization _apple_
-- `giss apple microsoft google` - List open issues in any repository in organizations _apple_, _microsoft_ and _google_
-- `giss rust-lang/rust apple/swift golang/go` - List open issues and pull requests in repositories for rust, swift and go
-- `giss -c` - List only closed issues and pull requests in current repo
-- `giss -A` - List both open and closed issues and pull requests in current repo
-- `giss -a` - List only open issues and pull requests assigned to user\* in current repo
-- `giss -i` - List only open pull requests in current repo
+- `giss` - List open tickets in current repo
+- `giss mantono/giss` - List open tickets in repository _giss_ that belongs to user/organization _mantono_
+- `giss apple` - List open tickets in any repository in organization _apple_
+- `giss apple microsoft google` - List tickets in any repository in organizations _apple_, _microsoft_ and _google_
+- `giss rust-lang/rust apple/swift golang/go` - List open tickets in repositories for rust, swift and go
+- `giss -c` - List only closed tickets in current repo
+- `giss -oc` - List both open and closed tickets in current repo
+- `giss -a` - List only open tickets assigned to user\* in current repo
+- `giss -i` - List only open issues in current repo
 - `giss -p` - List only open pull requests in current repo
-- `giss -r` - List review requests for user\*
-- `giss -a kotlin` - List all open issues and pull requests assigned to user in any repository in orgranization _kotlin_
+- `giss -r` - List only review requests for user\*
+- `giss -a kotlin` - List all open tickets assigned to user in any repository in orgranization _kotlin_
 
-\*the user is determined by the owner of the token
+\*the user is determined by the owner of the token, unless overriden with the `--user` flag.
+
+See `giss --help` for all available options.
 
 ```
 USAGE:
     giss [FLAGS] [OPTIONS] [target]...
 
 FLAGS:
-    -A, --all
-            Show all issues and pull requests and do not filter by open or closed state
-
     -a, --assigned
+            Assigned only
+
             Only include issues and pull requests assigned to user
-
     -c, --closed
-            Only show issues and pull requests in state closed or merged
+            Show closed issues or pull requests
 
+            Include issues, pull request or review requests that are closed or merged
+    -D, --debug
+            Prind debug information
+
+            Print debug information about current build for binary, useful for when an issue is encountered and reported
     -h, --help
             Prints help information
 
     -i, --issues
-            Only list issues
+            List issues
 
     -o, --open
-            Only show issues and pull requests in state open. This is enabled by default
+            Show open issues or pull requests
 
+            Include issues, pull request or review requests that are open. If neither this flag nor --closed/-c is
+            given, default behavior will be to display open issues or pull requests.
     -p, --pull-requests
-            Only list pull requests
+            List pull requests
 
     -r, --review-requests
-            Only show pull requests where the user has been requested to review it
+            List review requests
 
     -V, --version
             Prints version information
 
 
 OPTIONS:
+        --colors <colors>
+            Set use of colors
+
+            Enable or disable output with colors. By default, the application will try to figure out if colors are
+            supported by the terminal in the current context, and use it if possible. Possible values are "on", "true",
+            "off", "false", "auto". [default: auto]
     -n, --limit <limit>
-            Limit how many issues that should be listed [default: 10]
+            Limit the number of issues or pull requests to list [default: 10]
 
     -t, --token <token>
-            GitHub API token [env: GITHUB_TOKEN]
+            GitHub API token
 
+            API token that will be used when authenticating towards GitHub's API [env: GITHUB_TOKEN]
+    -u, --user <user>
+            Username
+
+            Username to use for the query. Will default to the username for the user of the token.
     -v, --verbosity <verbosity>
+            Set verbosity level, 0 - 5
+
             Set the verbosity level, from 0 (least amount of output) to 5 (most verbose). Note that logging level
             configured via RUST_LOG overrides this setting. [default: 1]
 
 ARGS:
     <target>...
+            Name of target(s)
+
             Name of the targets for the action. Can be a combination of one or several repositories, organizations or
             users. Any repository specified must be qualified with the owner or organization name. For example
             'org/repo'. When no target is specified, repository in current directory will be used, if possible.
