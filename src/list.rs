@@ -15,6 +15,7 @@ pub struct FilterConfig {
     pull_requests: bool,
     review_requests: bool,
     issues: bool,
+    labels: Vec<String>,
     state: StateFilter,
     limit: u32,
 }
@@ -41,6 +42,7 @@ impl From<&Config> for FilterConfig {
             assigned_only: cfg.assigned_only(),
             pull_requests: cfg.pulls(),
             review_requests: cfg.reviews(),
+            labels: cfg.label(),
             issues: cfg.issues(),
             state: cfg.state(),
             limit: cfg.limit(),
@@ -111,6 +113,7 @@ fn create_query(kind: Type, user: &Option<String>, targets: &[Target], config: &
         review_requested,
         sort: (String::from("updated"), Sorting::Descending),
         state: config.state,
+        labels: config.labels.clone(),
         targets: targets.to_vec(),
         limit: config.limit,
     }

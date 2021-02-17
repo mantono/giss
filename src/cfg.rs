@@ -44,6 +44,12 @@ pub struct Config {
     #[structopt(short, long)]
     closed: bool,
 
+    /// Filter by label
+    ///
+    /// Only include issues, pull requests or review reuests which has (all) the given label(s).
+    #[structopt(short, long)]
+    labels: Vec<String>,
+
     /// List issues
     #[structopt(short, long)]
     issues: bool,
@@ -190,6 +196,10 @@ impl Config {
 
     pub fn pulls(&self) -> bool {
         self.pull_requests || self.all()
+    }
+
+    pub fn label(&self) -> Vec<String> {
+        self.labels.clone()
     }
 
     pub fn verbosity(&self) -> &Verbosity {

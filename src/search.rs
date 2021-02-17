@@ -43,6 +43,7 @@ pub struct SearchIssues {
     pub assignee: Option<String>,
     pub review_requested: Option<String>,
     pub archived: bool,
+    pub labels: Vec<String>,
     pub resource_type: Option<Type>,
     pub targets: Vec<Target>,
     pub sort: (String, Sorting),
@@ -70,6 +71,7 @@ impl SearchQuery for SearchIssues {
             self.assignee(),
             self.archived(),
             self.users(),
+            self.labels(),
             self.sort(),
         ]
         .iter()
@@ -116,6 +118,14 @@ impl SearchIssues {
         } else {
             let users: String = self.targets.iter().map(|user| user.to_string()).join(" ");
             Some(users)
+        }
+    }
+
+    fn labels(&self) -> Option<String> {
+        if self.labels.is_empty() {
+            None
+        } else {
+            Some(self.labels.iter().map(|l| format!("label:{}", l)).join(" "))
         }
     }
 
