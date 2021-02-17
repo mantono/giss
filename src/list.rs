@@ -1,12 +1,13 @@
 use crate::search::{GraphQLQuery, SearchIssues, SearchQuery, Sorting, Type};
 use crate::{
+    api::ApiError,
     cfg::Config,
-    issue::{Assignee, Issue, Label, Root},
+    issue::{Issue, Root},
+    AppErr,
 };
 use crate::{user::Username, Target};
 use core::fmt;
-use std::io::Write;
-use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
+use std::sync::mpsc::{SendError, Sender};
 
 #[derive(Debug)]
 pub struct FilterConfig {
@@ -18,8 +19,24 @@ pub struct FilterConfig {
     limit: u32,
 }
 
-impl From<Config> for FilterConfig {
-    fn from(cfg: Config) -> Self {
+impl FilterConfig {
+    pub fn types(&self) -> Vec<Type> {
+        let mut types: Vec<Type> = Vec::with_capacity(3);
+        if self.issues {
+            types.push(Type::Issue)
+        }
+        if self.pull_requests {
+            types.push(Type::PullRequest)
+        }
+        if self.review_requests {
+            types.push(Type::ReviewRequest)
+        }
+        types
+    }
+}
+
+impl From<&Config> for FilterConfig {
+    fn from(cfg: &Config) -> Self {
         FilterConfig {
             assigned_only: cfg.assigned_only(),
             pull_requests: cfg.pulls(),
@@ -49,115 +66,77 @@ impl std::fmt::Display for StateFilter {
     }
 }
 
-pub fn list_issues(
+pub async fn list_issues(
+    channel: Sender<Issue>,
     user: &Option<Username>,
     targets: &[Target],
     token: &str,
     config: &FilterConfig,
-    use_colors: ColorChoice,
-) {
+) -> Result<(), AppErr> {
     let user: Option<String> = user.clone().map(|u| u.0);
-    let query: SearchIssues = SearchIssues {
-        archived: false,
-        assignee: if config.assigned_only { user.clone() } else { None },
-        resource_type: match (config.issues, config.pull_requests, config.review_requests) {
-            (true, false, false) => Some(Type::Issue),
-            (false, true, false) => Some(Type::PullRequest),
-            (false, false, true) => Some(Type::ReviewRequest),
-            (false, false, false) => None,
-            (_, _, _) => panic!(
-                "Illegal combination: {}, {}, {}",
-                config.issues, config.pull_requests, config.review_requests
-            ),
+    log::debug!("Filter config: {:?}", config);
+
+    for req_type in config.types() {
+        let query: SearchIssues = create_query(req_type, &user, targets, config);
+        let issues: Vec<Issue> = api_request(query, token).await?;
+
+        for issue in issues {
+            channel.send(issue)?;
+        }
+    }
+
+    Ok(())
+}
+
+fn create_query(kind: Type, user: &Option<String>, targets: &[Target], config: &FilterConfig) -> SearchIssues {
+    let assignee: Option<String> = match config.assigned_only {
+        false => None,
+        true => match kind {
+            Type::Issue | Type::PullRequest => user.clone(),
+            Type::ReviewRequest => None,
         },
-        review_requested: if config.review_requests { user.clone() } else { None },
+    };
+
+    let review_requested: Option<String> = match config.review_requests {
+        false => None,
+        true => match kind {
+            Type::ReviewRequest => user.clone(),
+            Type::Issue | Type::PullRequest => None,
+        },
+    };
+    SearchIssues {
+        archived: false,
+        assignee,
+        resource_type: Some(kind),
+        review_requested,
         sort: (String::from("updated"), Sorting::Descending),
         state: config.state,
         targets: targets.to_vec(),
         limit: config.limit,
-    };
-    let query: GraphQLQuery = query.build();
+    }
+}
 
-    let issues: Root = match crate::api::v4::request(token, query) {
-        Ok(body) => body,
-        Err(e) => {
-            log::error!("Error, status code: {}", e);
-            std::process::exit(4)
+impl From<SendError<Issue>> for AppErr {
+    fn from(_: SendError<Issue>) -> Self {
+        AppErr::ChannelError
+    }
+}
+
+impl From<ApiError> for AppErr {
+    fn from(err: ApiError) -> Self {
+        match err {
+            ApiError::NoResponse(_) => AppErr::ApiError,
+            ApiError::Response(code) => match code {
+                429 => AppErr::RateLimited,
+                _ => AppErr::ApiError,
+            },
         }
-    };
-
-    let issues: Vec<&Issue> = issues.data.search.edges.iter().map(|n| &n.node).collect();
-
-    let print_repo: bool = match (targets.len(), targets.first().unwrap()) {
-        (1, Target::Repository { .. }) => false,
-        _ => true,
-    };
-
-    for issue in issues {
-        print_issue(&issue, print_repo, use_colors)
     }
 }
 
-fn print_issue(issue: &Issue, print_repo: bool, use_colors: ColorChoice) {
-    let title: String = truncate(issue.title.clone(), 50);
-    let assignees: String = issue
-        .assignees
-        .nodes
-        .iter()
-        .map(|a: &Assignee| &a.login)
-        .map(|s: &String| format!("{}{}", "@", s))
-        .collect::<Vec<String>>()
-        .join(", ");
-
-    let repo: String = if print_repo {
-        issue.repository.name_with_owner.clone()
-    } else {
-        String::from("")
-    };
-
-    let labels: String = issue
-        .labels
-        .nodes
-        .iter()
-        .map(|l: &Label| &l.name)
-        .map(|s: &String| format!("{}{}", "#", s))
-        .collect::<Vec<String>>()
-        .join(", ");
-
-    let mut stdout = StandardStream::stdout(use_colors);
-
-    if print_repo {
-        write!(&mut stdout, "#{} {}", issue.number, repo).unwrap();
-    } else {
-        write!(&mut stdout, "#{}", issue.number).unwrap();
-    }
-
-    write(&mut stdout, " | ", Some(Color::Green));
-    write(&mut stdout, &title, None);
-
-    if !assignees.is_empty() {
-        write(&mut stdout, " | ", Some(Color::Green));
-        write(&mut stdout, &assignees, Some(Color::Cyan));
-    }
-
-    if !labels.is_empty() {
-        write(&mut stdout, " | ", Some(Color::Green));
-        write(&mut stdout, &labels, Some(Color::Magenta));
-    }
-
-    write(&mut stdout, "\n", None);
-}
-
-fn truncate(string: String, max_length: usize) -> String {
-    let new_length: usize = std::cmp::min(string.len(), max_length);
-    if new_length < string.len() {
-        string[..new_length].to_string()
-    } else {
-        string
-    }
-}
-
-fn write(stream: &mut StandardStream, content: &str, color: Option<Color>) {
-    stream.set_color(ColorSpec::new().set_fg(color)).unwrap();
-    write!(stream, "{}", content).unwrap();
+async fn api_request(search: SearchIssues, token: &str) -> Result<Vec<Issue>, ApiError> {
+    let query: GraphQLQuery = search.build();
+    let issues: Root = crate::api::v4::request(token, query).await?;
+    let issues: Vec<Issue> = issues.data.search.edges.into_iter().map(|n| n.node).collect();
+    Ok(issues)
 }

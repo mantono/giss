@@ -17,11 +17,11 @@ pub struct User {
 pub struct Username(pub String);
 
 impl Username {
-    pub fn from_token(token: &str) -> Result<Username, AppErr> {
+    pub async fn from_token(token: &str) -> Result<Username, AppErr> {
         match get_saved_username(token) {
             Some(username) => Ok(Username(username)),
             None => {
-                let username: String = api_lookup_username(token)?.login;
+                let username: String = api_lookup_username(token).await?.login;
                 save_username(token, &username)?;
                 Ok(Username(username))
             }
@@ -50,10 +50,10 @@ impl From<reqwest::Error> for AppErr {
     }
 }
 
-fn api_lookup_username(token: &str) -> Result<User, AppErr> {
+async fn api_lookup_username(token: &str) -> Result<User, AppErr> {
     let url: String = [GITHUB_API_V3_URL, "user"].join("/");
-    let response: reqwest::blocking::Response = CLIENT.get(&url).bearer_auth(token).send()?;
-    Ok(response.json::<User>()?)
+    let response: reqwest::Response = CLIENT.get(&url).bearer_auth(token).send().await?;
+    Ok(response.json::<User>().await?)
 }
 
 fn save_username(token: &str, username: &str) -> Result<(), std::io::Error> {
