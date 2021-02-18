@@ -1,5 +1,5 @@
-use crate::Target;
 use crate::{list::StateFilter, project::Project};
+use crate::{sort::Sorting, Target};
 use itertools::Itertools;
 use serde::Serialize;
 use serde_json::json;
@@ -10,21 +10,6 @@ pub struct GraphQLQuery {
     pub query: String,
     pub variables: serde_json::Value,
     pub operation_name: String,
-}
-
-pub enum Sorting {
-    Descending,
-    Ascending,
-}
-
-impl fmt::Display for Sorting {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let output: &str = match self {
-            Sorting::Ascending => "asc",
-            Sorting::Descending => "desc",
-        };
-        write!(f, "{}", output)
-    }
 }
 
 pub trait SearchQuery {
@@ -47,7 +32,7 @@ pub struct SearchIssues {
     pub project: Option<Project>,
     pub resource_type: Option<Type>,
     pub targets: Vec<Target>,
-    pub sort: (String, Sorting),
+    pub sort: Sorting,
     pub limit: u32,
 }
 
@@ -136,6 +121,6 @@ impl SearchIssues {
     }
 
     fn sort(&self) -> Option<String> {
-        Some(String::from("sort:updated-desc"))
+        Some(format!("sort:{}", self.sort))
     }
 }

@@ -3,11 +3,12 @@ use crate::{
     cfg::Config,
     issue::{Issue, Root},
     project::Project,
+    sort::Sorting,
     AppErr,
 };
 use crate::{
     project,
-    search::{GraphQLQuery, SearchIssues, SearchQuery, Sorting, Type},
+    search::{GraphQLQuery, SearchIssues, SearchQuery, Type},
 };
 use crate::{user::Username, Target};
 use core::fmt;
@@ -21,6 +22,7 @@ pub struct FilterConfig {
     issues: bool,
     labels: Vec<String>,
     project: Option<Project>,
+    sorting: Sorting,
     state: StateFilter,
     limit: u32,
 }
@@ -49,6 +51,7 @@ impl From<&Config> for FilterConfig {
             review_requests: cfg.reviews(),
             labels: cfg.label(),
             project: cfg.project(),
+            sorting: cfg.sorting(),
             issues: cfg.issues(),
             state: cfg.state(),
             limit: cfg.limit(),
@@ -117,7 +120,7 @@ fn create_query(kind: Type, user: &Option<String>, targets: &[Target], config: &
         assignee,
         resource_type: Some(kind),
         review_requested,
-        sort: (String::from("updated"), Sorting::Descending),
+        sort: config.sorting,
         state: config.state,
         labels: config.labels.clone(),
         project: config.project.clone(),

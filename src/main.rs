@@ -16,6 +16,7 @@ mod list;
 mod logger;
 mod project;
 mod search;
+mod sort;
 mod target;
 mod ui;
 mod user;
