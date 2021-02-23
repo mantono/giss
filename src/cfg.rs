@@ -78,10 +78,14 @@ pub struct Config {
     review_requests: bool,
 
     /// Sort by
+    ///
+    /// Sort by any of the following properties; "created", "updated", "comments", "reactions"
     #[structopt(short, long)]
     sort_by: Option<Property>,
 
     /// Ordering
+    ///
+    /// Can be either ascending (asc|ascending) or decending (desc|descending)
     #[structopt(short = "O", long)]
     order: Option<Order>,
 
