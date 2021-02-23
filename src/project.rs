@@ -11,7 +11,7 @@ impl FromStr for Project {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let parts: Vec<&str> = s.split("/").collect();
+        let parts: Vec<&str> = s.split('/').collect();
         match parts.len() {
             2 => {
                 let owner: &str = parts.first().expect("Exactly two should be present");

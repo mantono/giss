@@ -1,6 +1,8 @@
-use std::{fmt, str::FromStr};
+use std::{cmp::Ordering, fmt, str::FromStr};
 
 use fmt::Display;
+
+use crate::issue::Issue;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Sorting(pub Property, pub Order);
@@ -11,12 +13,39 @@ impl Display for Sorting {
     }
 }
 
+impl Sorting {
+    pub fn sort(&self, i0: &Issue, i1: &Issue) -> Ordering {
+        let Sorting(prop, order) = self;
+        order.order(prop.sort(i0, i1))
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum Property {
     Created,
     Updated,
     Comments,
     Reactions,
+}
+
+impl Property {
+    pub fn sort(&self, i0: &Issue, i1: &Issue) -> Ordering {
+        match self {
+            Property::Created => i0.created_at.cmp(&i1.created_at),
+            Property::Updated => i0.updated_at.cmp(&i1.updated_at),
+            Property::Comments => i0.comments.total_count.cmp(&i1.comments.total_count),
+            Property::Reactions => i0.reactions.total_count.cmp(&i1.reactions.total_count),
+        }
+    }
+}
+
+impl Order {
+    pub fn order(&self, order: Ordering) -> Ordering {
+        match self {
+            Order::Ascending => order,
+            Order::Descending => order.reverse(),
+        }
+    }
 }
 
 impl Default for Property {

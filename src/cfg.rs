@@ -1,4 +1,4 @@
-use std::{fmt::Display, str::FromStr};
+use std::str::FromStr;
 
 use crate::{
     args::read_repo_from_file,

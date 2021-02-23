@@ -1,3 +1,4 @@
+use crate::search::{GraphQLQuery, SearchIssues, SearchQuery, Type};
 use crate::{
     api::ApiError,
     cfg::Config,
@@ -5,10 +6,6 @@ use crate::{
     project::Project,
     sort::Sorting,
     AppErr,
-};
-use crate::{
-    project,
-    search::{GraphQLQuery, SearchIssues, SearchQuery, Type},
 };
 use crate::{user::Username, Target};
 use core::fmt;
@@ -137,6 +134,7 @@ impl From<SendError<Issue>> for AppErr {
 
 impl From<ApiError> for AppErr {
     fn from(err: ApiError) -> Self {
+        log::error!("{:?}", err);
         match err {
             ApiError::NoResponse(_) => AppErr::ApiError,
             ApiError::Response(code) => match code {

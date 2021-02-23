@@ -1,9 +1,10 @@
 use crate::{list::StateFilter, project::Project};
 use crate::{sort::Sorting, Target};
 use itertools::Itertools;
+use serde::Deserialize;
 use serde::Serialize;
 use serde_json::json;
-use std::fmt;
+use std::fmt::Display;
 
 #[derive(Serialize, Debug)]
 pub struct GraphQLQuery {
@@ -17,10 +18,22 @@ pub trait SearchQuery {
     fn build(&self) -> GraphQLQuery;
 }
 
+#[derive(Debug, Deserialize, Copy, Clone)]
 pub enum Type {
     Issue,
     PullRequest,
     ReviewRequest,
+}
+
+impl Display for Type {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let tp: &str = match self {
+            Type::Issue => "I",
+            Type::PullRequest => "P",
+            Type::ReviewRequest => "R",
+        };
+        write!(f, "{}", tp)
+    }
 }
 
 pub struct SearchIssues {
@@ -55,11 +68,11 @@ impl SearchQuery for SearchIssues {
             self.search_type(),
             self.state(),
             self.assignee(),
-            self.archived(),
+            Some(self.archived()),
             self.users(),
             self.labels(),
             self.project(),
-            self.sort(),
+            Some(self.sort()),
         ]
         .iter()
         .filter_map(|v| v.clone())
@@ -95,8 +108,8 @@ impl SearchIssues {
         }
     }
 
-    fn archived(&self) -> Option<String> {
-        Some(String::from("archived:false"))
+    fn archived(&self) -> String {
+        String::from("archived:false")
     }
 
     fn users(&self) -> Option<String> {
@@ -120,7 +133,7 @@ impl SearchIssues {
         self.project.clone().map(|p| format!("project:{}", p))
     }
 
-    fn sort(&self) -> Option<String> {
-        Some(format!("sort:{}", self.sort))
+    fn sort(&self) -> String {
+        format!("sort:{}", self.sort)
     }
 }
