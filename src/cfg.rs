@@ -1,6 +1,14 @@
-use std::{fmt::Display, str::FromStr};
+use std::str::FromStr;
 
-use crate::{args::read_repo_from_file, list::StateFilter, project::Project, target::Target, user::Username, AppErr};
+use crate::{
+    args::read_repo_from_file,
+    list::StateFilter,
+    project::Project,
+    sort::{Order, Property, Sorting},
+    target::Target,
+    user::Username,
+    AppErr,
+};
 use structopt::StructOpt;
 use termcolor::ColorChoice;
 
@@ -68,6 +76,18 @@ pub struct Config {
     /// List review requests
     #[structopt(short, long)]
     review_requests: bool,
+
+    /// Sort by
+    ///
+    /// Sort by any of the following properties; "created", "updated", "comments", "reactions"
+    #[structopt(short, long)]
+    sort_by: Option<Property>,
+
+    /// Ordering
+    ///
+    /// Can be either ascending (asc|ascending) or decending (desc|descending)
+    #[structopt(short = "O", long)]
+    order: Option<Order>,
 
     /// Username
     ///
@@ -203,6 +223,10 @@ impl Config {
 
     pub fn pulls(&self) -> bool {
         self.pull_requests || self.all()
+    }
+
+    pub fn sorting(&self) -> Sorting {
+        Sorting(self.sort_by.unwrap_or_default(), self.order.unwrap_or_default())
     }
 
     pub fn label(&self) -> Vec<String> {

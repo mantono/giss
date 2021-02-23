@@ -1,9 +1,10 @@
-use crate::Target;
 use crate::{list::StateFilter, project::Project};
+use crate::{sort::Sorting, Target};
 use itertools::Itertools;
+use serde::Deserialize;
 use serde::Serialize;
 use serde_json::json;
-use std::fmt;
+use std::fmt::Display;
 
 #[derive(Serialize, Debug)]
 pub struct GraphQLQuery {
@@ -12,30 +13,27 @@ pub struct GraphQLQuery {
     pub operation_name: String,
 }
 
-pub enum Sorting {
-    Descending,
-    Ascending,
-}
-
-impl fmt::Display for Sorting {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let output: &str = match self {
-            Sorting::Ascending => "asc",
-            Sorting::Descending => "desc",
-        };
-        write!(f, "{}", output)
-    }
-}
-
 pub trait SearchQuery {
     fn search_type(&self) -> Option<String>;
     fn build(&self) -> GraphQLQuery;
 }
 
+#[derive(Debug, Deserialize, Copy, Clone)]
 pub enum Type {
     Issue,
     PullRequest,
     ReviewRequest,
+}
+
+impl Display for Type {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let tp: &str = match self {
+            Type::Issue => "I",
+            Type::PullRequest => "P",
+            Type::ReviewRequest => "R",
+        };
+        write!(f, "{}", tp)
+    }
 }
 
 pub struct SearchIssues {
@@ -47,7 +45,7 @@ pub struct SearchIssues {
     pub project: Option<Project>,
     pub resource_type: Option<Type>,
     pub targets: Vec<Target>,
-    pub sort: (String, Sorting),
+    pub sort: Sorting,
     pub limit: u32,
 }
 
@@ -70,11 +68,11 @@ impl SearchQuery for SearchIssues {
             self.search_type(),
             self.state(),
             self.assignee(),
-            self.archived(),
+            Some(self.archived()),
             self.users(),
             self.labels(),
             self.project(),
-            self.sort(),
+            Some(self.sort()),
         ]
         .iter()
         .filter_map(|v| v.clone())
@@ -110,8 +108,8 @@ impl SearchIssues {
         }
     }
 
-    fn archived(&self) -> Option<String> {
-        Some(String::from("archived:false"))
+    fn archived(&self) -> String {
+        String::from("archived:false")
     }
 
     fn users(&self) -> Option<String> {
@@ -135,7 +133,7 @@ impl SearchIssues {
         self.project.clone().map(|p| format!("project:{}", p))
     }
 
-    fn sort(&self) -> Option<String> {
-        Some(String::from("sort:updated-desc"))
+    fn sort(&self) -> String {
+        format!("sort:{}", self.sort)
     }
 }

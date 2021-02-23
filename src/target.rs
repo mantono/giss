@@ -29,22 +29,6 @@ impl FromStr for Target {
     }
 }
 
-impl Target {
-    fn org(&self) -> &String {
-        match self {
-            Target::Organization(org) => org,
-            Target::Repository(org, _) => org,
-        }
-    }
-
-    fn repo(&self) -> Option<&String> {
-        match self {
-            Target::Organization(_) => None,
-            Target::Repository(_, repo) => Some(repo),
-        }
-    }
-}
-
 impl fmt::Display for Target {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

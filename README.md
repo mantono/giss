@@ -33,7 +33,7 @@ See `giss --help` for all available options.
 
 ```
 USAGE:
-    giss [FLAGS] [OPTIONS] [target]...
+    giss [FLAGS] [OPTIONS] [--] [target]...
 
 FLAGS:
     -a, --assigned
@@ -76,9 +76,25 @@ OPTIONS:
             Enable or disable output with colors. By default, the application will try to figure out if colors are
             supported by the terminal in the current context, and use it if possible. Possible values are "on", "true",
             "off", "false", "auto". [default: auto]
+    -l, --labels <labels>...
+            Filter by label
+
+            Only include issues, pull requests or review reuests which has (all) the given label(s).
     -n, --limit <limit>
             Limit the number of issues or pull requests to list [default: 10]
 
+    -O, --order <order>
+            Ordering
+
+            Can be either ascending (asc|ascending) or decending (desc|descending)
+    -P, --project <project>
+            Filter by project
+
+            Only include isses, pull request or review requests which is assoicated with the given project.
+    -s, --sort-by <sort-by>
+            Sort by
+
+            Sort by any of the following properties; "created", "updated", "comments", "reactions"
     -t, --token <token>
             GitHub API token
 

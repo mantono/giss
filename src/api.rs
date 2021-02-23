@@ -55,6 +55,7 @@ impl From<reqwest::Error> for ApiError {
     }
 }
 
+#[derive(Debug)]
 pub enum ApiError {
     NoResponse(String),
     Response(u16),

@@ -1,16 +1,22 @@
 use std::{io::Write, sync::mpsc::RecvTimeoutError};
 use std::{sync::mpsc::Receiver, time::Duration};
 
+use itertools::Itertools;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
+use user::Username;
 
 use crate::{
     cfg::Config,
-    issue::{Assignee, Issue, Label},
-    AppErr,
+    issue::{Issue, Label, UserFields},
+    search::Type,
+    sort::Sorting,
+    user, AppErr,
 };
 
 pub struct DisplayConfig {
     colors: ColorChoice,
+    sorting: Sorting,
+    user: Option<Username>,
     limit: u32,
 }
 
@@ -19,29 +25,34 @@ impl From<&Config> for DisplayConfig {
         DisplayConfig {
             colors: cfg.colors(),
             limit: cfg.limit(),
+            user: cfg.username(),
+            sorting: cfg.sorting(),
         }
     }
 }
 
 pub fn display(channel: Receiver<Issue>, cfg: DisplayConfig) -> Result<(), AppErr> {
-    let mut limit: u32 = cfg.limit;
-    loop {
-        if limit == 0 {
-            return Ok(());
-        }
+    let mut limit: u32 = cfg.limit * 3;
+    let mut queue: Vec<Issue> = Vec::with_capacity(limit as usize);
+    while limit > 0 {
         match channel.recv_timeout(Duration::from_secs(20)) {
             Ok(issue) => {
-                print_issue(issue, true, &cfg);
+                queue.push(issue);
                 limit -= 1;
             }
-            Err(e) => {
-                return match e {
-                    RecvTimeoutError::Timeout => Err(AppErr::Timeout),
-                    RecvTimeoutError::Disconnected => Ok(()),
-                }
-            }
+            Err(e) => match e {
+                RecvTimeoutError::Timeout => return Err(AppErr::Timeout),
+                RecvTimeoutError::Disconnected => limit = 0,
+            },
         };
     }
+    queue.sort_unstable_by(|i0, i1| cfg.sorting.sort(i0, i1));
+    queue
+        .into_iter()
+        .unique_by(|i| i.id)
+        .take(cfg.limit as usize)
+        .for_each(|i| print_issue(i, true, &cfg));
+    Ok(())
 }
 
 fn print_issue(issue: Issue, print_repo: bool, cfg: &DisplayConfig) {
@@ -51,7 +62,7 @@ fn print_issue(issue: Issue, print_repo: bool, cfg: &DisplayConfig) {
         .assignees
         .nodes
         .iter()
-        .map(|a: &Assignee| &a.login)
+        .map(|a: &UserFields| &a.login)
         .map(|s: &String| format!("{}{}", "@", s))
         .collect::<Vec<String>>()
         .join(", ");
@@ -73,26 +84,56 @@ fn print_issue(issue: Issue, print_repo: bool, cfg: &DisplayConfig) {
 
     let mut stdout = StandardStream::stdout(use_colors);
 
-    if print_repo {
-        write!(&mut stdout, "#{} {}", issue.number, repo).unwrap();
-    } else {
-        write!(&mut stdout, "#{}", issue.number).unwrap();
-    }
+    print_type(&mut stdout, &issue, cfg);
 
-    write(&mut stdout, " | ", Some(Color::Green));
+    let target: String = if print_repo {
+        format!("#{} {}", issue.number, repo)
+    } else {
+        format!("#{}", issue.number)
+    };
+
+    write(&mut stdout, target.as_str(), None);
+    delimiter(&mut stdout);
     write(&mut stdout, &title, None);
 
     if !assignees.is_empty() {
-        write(&mut stdout, " | ", Some(Color::Green));
+        delimiter(&mut stdout);
         write(&mut stdout, &assignees, Some(Color::Cyan));
     }
 
     if !labels.is_empty() {
-        write(&mut stdout, " | ", Some(Color::Green));
+        delimiter(&mut stdout);
         write(&mut stdout, &labels, Some(Color::Magenta));
     }
 
     write(&mut stdout, "\n", None);
+}
+
+fn print_type(stream: &mut StandardStream, issue: &Issue, cfg: &DisplayConfig) {
+    let kind: Type = match issue.kind {
+        Type::Issue => Type::Issue,
+        _ => match &cfg.user {
+            Some(user) => match issue.has_review_request(&user.0) {
+                true => Type::ReviewRequest,
+                false => Type::PullRequest,
+            },
+            None => Type::PullRequest,
+        },
+    };
+
+    match kind {
+        crate::search::Type::Issue => write(stream, "I ", Some(Color::Blue)),
+        crate::search::Type::PullRequest => write(stream, "P ", Some(Color::Magenta)),
+        crate::search::Type::ReviewRequest => {
+            write(stream, "P", Some(Color::Magenta));
+            write(stream, "R", Some(Color::Yellow));
+        }
+    };
+    write(stream, "| ", Some(Color::Green));
+}
+
+fn delimiter(stream: &mut StandardStream) {
+    write(stream, " | ", Some(Color::Green));
 }
 
 fn truncate(string: String, max_length: usize) -> String {

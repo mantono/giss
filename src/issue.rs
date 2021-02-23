@@ -1,4 +1,4 @@
-use crate::github_resources::ghrs;
+use crate::{github_resources::ghrs, search::Type};
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -30,15 +30,40 @@ pub struct Issue {
     pub title: String,
     #[serde(alias = "bodyText")]
     pub body: Option<String>,
+    #[serde(alias = "createdAt")]
+    pub created_at: String,
     #[serde(alias = "updatedAt")]
     pub updated_at: String,
     #[serde(alias = "issueState")]
     #[serde(alias = "pullRequestState")]
     pub state: ghrs::State,
     pub comments: Comments,
+    pub reactions: Reactions,
     pub assignees: AssigneeNode,
+    #[serde(alias = "reviewRequests")]
+    pub review_requets: Option<ReviewRequestNode>,
     pub labels: LabelNode,
     pub repository: Repository,
+    #[serde(alias = "__typename")]
+    pub kind: Type,
+}
+
+impl PartialEq for Issue {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
+impl Issue {
+    pub fn has_review_request(&self, user: &str) -> bool {
+        match &self.review_requets {
+            Some(req) => {
+                let users: Vec<&String> = req.nodes.iter().map(|n| &n.requested_reviewer.login).collect();
+                users.contains(&&user.to_string())
+            }
+            None => false,
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -52,8 +77,9 @@ pub struct Label {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Assignee {
+pub struct UserFields {
     pub login: String,
+    pub id: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -69,8 +95,24 @@ pub struct Comments {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct Reactions {
+    #[serde(alias = "totalCount")]
+    pub total_count: u32,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct AssigneeNode {
-    pub nodes: Vec<Assignee>,
+    pub nodes: Vec<UserFields>,
+}
+#[derive(Debug, Deserialize)]
+pub struct ReviewRequestNode {
+    pub nodes: Vec<RequestedReviewer>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RequestedReviewer {
+    #[serde(alias = "requestedReviewer")]
+    pub requested_reviewer: UserFields,
 }
 
 impl ghrs::Closeable for Issue {

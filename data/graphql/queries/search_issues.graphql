@@ -22,7 +22,7 @@ fragment issueFields on Issue {
     issueState: state
     assignees(first: 10) {
         nodes {
-            login
+            ...userFields
         }
     }
     updatedAt
@@ -36,6 +36,9 @@ fragment issueFields on Issue {
         nameWithOwner
     }
     comments {
+        totalCount
+    }
+    reactions {
         totalCount
     }
 }
@@ -50,17 +53,14 @@ fragment pullRequestFields on PullRequest {
     createdAt
     assignees(first: 10) {
         nodes {
-            login
+            ...userFields
         }
     }
     reviewRequests(first: 10) {
         totalCount
         nodes {
-            id
-            pullRequest {
-                author {
-                    login
-                }
+            requestedReviewer {
+                ...userFields
             }
         }
     }
@@ -75,4 +75,12 @@ fragment pullRequestFields on PullRequest {
     comments {
         totalCount
     }
+    reactions {
+        totalCount
+    }
+}
+
+fragment userFields on User {
+    login,
+    id
 }
