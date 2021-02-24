@@ -7,7 +7,7 @@ use user::Username;
 
 use crate::{
     cfg::Config,
-    issue::{self, Issue, Label, UserFields},
+    issue::{Issue, Label, UserFields},
     search::Type,
     sort::Sorting,
     user, AppErr,
