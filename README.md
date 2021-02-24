@@ -54,6 +54,10 @@ FLAGS:
     -i, --issues
             List issues
 
+    -L, --links
+            Show links
+
+            Show links to each issue or pull request in the output
     -o, --open
             Show open issues or pull requests
 
