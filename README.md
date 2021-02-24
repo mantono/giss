@@ -91,6 +91,10 @@ OPTIONS:
             Filter by project
 
             Only include isses, pull request or review requests which is assoicated with the given project.
+    -S, --search <search>
+            Search
+
+            Search by a string, which must be present either in the title or the body of an issue or pull request.
     -s, --sort-by <sort-by>
             Sort by
 

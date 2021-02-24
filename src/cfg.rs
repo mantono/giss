@@ -89,6 +89,13 @@ pub struct Config {
     #[structopt(short = "O", long)]
     order: Option<Order>,
 
+    /// Search
+    ///
+    /// Search by a string, which must be present either in the title or the body of an
+    /// issue or pull request.
+    #[structopt(short = "S", long)]
+    search: Option<String>,
+
     /// Username
     ///
     /// Username to use for the query. Will default to the username for the user of the token.
@@ -227,6 +234,10 @@ impl Config {
 
     pub fn sorting(&self) -> Sorting {
         Sorting(self.sort_by.unwrap_or_default(), self.order.unwrap_or_default())
+    }
+
+    pub fn search(&self) -> Option<String> {
+        self.search.clone()
     }
 
     pub fn label(&self) -> Vec<String> {

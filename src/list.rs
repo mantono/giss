@@ -20,6 +20,7 @@ pub struct FilterConfig {
     labels: Vec<String>,
     project: Option<Project>,
     sorting: Sorting,
+    search: Option<String>,
     state: StateFilter,
     limit: u32,
 }
@@ -49,6 +50,7 @@ impl From<&Config> for FilterConfig {
             labels: cfg.label(),
             project: cfg.project(),
             sorting: cfg.sorting(),
+            search: cfg.search(),
             issues: cfg.issues(),
             state: cfg.state(),
             limit: cfg.limit(),
@@ -122,6 +124,7 @@ fn create_query(kind: Type, user: &Option<String>, targets: &[Target], config: &
         labels: config.labels.clone(),
         project: config.project.clone(),
         targets: targets.to_vec(),
+        search: config.search.clone(),
         limit: config.limit,
     }
 }

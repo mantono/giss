@@ -46,6 +46,7 @@ pub struct SearchIssues {
     pub resource_type: Option<Type>,
     pub targets: Vec<Target>,
     pub sort: Sorting,
+    pub search: Option<String>,
     pub limit: u32,
 }
 
@@ -73,6 +74,7 @@ impl SearchQuery for SearchIssues {
             self.labels(),
             self.project(),
             Some(self.sort()),
+            self.search(),
         ]
         .iter()
         .filter_map(|v| v.clone())
@@ -135,5 +137,9 @@ impl SearchIssues {
 
     fn sort(&self) -> String {
         format!("sort:{}", self.sort)
+    }
+
+    fn search(&self) -> Option<String> {
+        self.search.clone().map(|s| format!("in:title,body {}", s))
     }
 }
