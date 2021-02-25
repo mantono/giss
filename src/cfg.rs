@@ -102,6 +102,12 @@ pub struct Config {
     #[structopt(short, long)]
     user: Option<Username>,
 
+    /// Show links
+    ///
+    /// Show links to each issue or pull request in the output
+    #[structopt(short = "L", long)]
+    links: bool,
+
     /// Set use of colors
     ///
     /// Enable or disable output with colors. By default, the application will
@@ -246,6 +252,10 @@ impl Config {
 
     pub fn project(&self) -> Option<Project> {
         self.project.clone()
+    }
+
+    pub fn show_links(&self) -> bool {
+        self.links
     }
 
     pub fn verbosity(&self) -> &Verbosity {

@@ -64,6 +64,16 @@ impl Issue {
             None => false,
         }
     }
+
+    pub fn link(&self) -> String {
+        let repo: &String = &self.repository.name_with_owner;
+        let kind: &str = match self.kind {
+            Type::Issue => "issues",
+            Type::PullRequest | Type::ReviewRequest => "pull",
+        };
+        let number: u32 = self.number;
+        format!("https://github.com/{}/{}/{}", repo, kind, number)
+    }
 }
 
 #[derive(Debug, Deserialize)]

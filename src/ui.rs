@@ -18,6 +18,7 @@ pub struct DisplayConfig {
     sorting: Sorting,
     user: Option<Username>,
     limit: u32,
+    links: bool,
 }
 
 impl From<&Config> for DisplayConfig {
@@ -27,6 +28,7 @@ impl From<&Config> for DisplayConfig {
             limit: cfg.limit(),
             user: cfg.username(),
             sorting: cfg.sorting(),
+            links: cfg.show_links(),
         }
     }
 }
@@ -104,6 +106,11 @@ fn print_issue(issue: Issue, print_repo: bool, cfg: &DisplayConfig) {
     if !labels.is_empty() {
         delimiter(&mut stdout);
         write(&mut stdout, &labels, Some(Color::Magenta));
+    }
+
+    if cfg.links {
+        delimiter(&mut stdout);
+        write(&mut stdout, &issue.link(), Some(Color::Blue));
     }
 
     write(&mut stdout, "\n", None);
