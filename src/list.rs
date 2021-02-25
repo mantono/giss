@@ -91,28 +91,28 @@ pub async fn list_issues(
 
     let start = Instant::now();
 
-    let one = async {
+    let issues = async {
         if config.issues {
             req_and_send(Type::Issue, &channel, &user, targets, token, config).await?;
         }
         Ok::<(), AppErr>(())
     };
 
-    let two = async {
+    let pulls = async {
         if config.pull_requests {
             req_and_send(Type::PullRequest, &channel, &user, targets, token, config).await?;
         }
         Ok::<(), AppErr>(())
     };
 
-    let three = async {
+    let reviews = async {
         if config.review_requests {
             req_and_send(Type::ReviewRequest, &channel, &user, targets, token, config).await?;
         }
         Ok::<(), AppErr>(())
     };
 
-    futures::try_join!(one, two, three)?;
+    futures::try_join!(issues, pulls, reviews)?;
 
     let end = Instant::now();
     let elapsed = end.duration_since(start);
