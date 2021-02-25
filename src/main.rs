@@ -50,9 +50,11 @@ fn main() -> Result<(), AppErr> {
     let filter: FilterConfig = (&cfg).into();
     let display: DisplayConfig = (&cfg).into();
 
-    let (send, recv) = std::sync::mpsc::channel::<Issue>();
+    let bounds: usize = cfg.limit() as usize * 2;
+    let (send, recv) = std::sync::mpsc::sync_channel::<Issue>(bounds);
 
-    Runtime::new().unwrap().block_on(async move {
+    let rt = Runtime::new().unwrap();
+    rt.spawn(async move {
         match list::list_issues(send, &user, &targets, &token, &filter).await {
             Ok(_) => log::debug!("API requests completed"),
             Err(e) => log::error!("{:?}", e),
@@ -60,6 +62,7 @@ fn main() -> Result<(), AppErr> {
     });
 
     ui::display(recv, display)?;
+    rt.shutdown_background();
 
     Ok(())
 }

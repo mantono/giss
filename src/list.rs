@@ -9,7 +9,10 @@ use crate::{
 };
 use crate::{user::Username, Target};
 use core::fmt;
-use std::sync::mpsc::{SendError, Sender};
+use std::{
+    sync::mpsc::{SendError, SyncSender},
+    time::Instant,
+};
 
 #[derive(Debug)]
 pub struct FilterConfig {
@@ -77,7 +80,7 @@ impl std::fmt::Display for StateFilter {
 }
 
 pub async fn list_issues(
-    channel: Sender<Issue>,
+    channel: SyncSender<Issue>,
     user: &Option<Username>,
     targets: &[Target],
     token: &str,
@@ -86,16 +89,58 @@ pub async fn list_issues(
     let user: Option<String> = user.clone().map(|u| u.0);
     log::debug!("Filter config: {:?}", config);
 
-    for req_type in config.types() {
-        let query: SearchIssues = create_query(req_type, &user, targets, config);
-        let issues: Vec<Issue> = api_request(query, token).await?;
+    let start = Instant::now();
 
-        for issue in issues {
-            channel.send(issue)?;
+    let one = async {
+        if config.issues {
+            req_and_send(Type::Issue, &channel, &user, targets, token, config).await;
         }
-    }
+    };
+
+    let two = async {
+        if config.pull_requests {
+            req_and_send(Type::PullRequest, &channel, &user, targets, token, config).await;
+        }
+    };
+
+    let three = async {
+        if config.review_requests {
+            req_and_send(Type::ReviewRequest, &channel, &user, targets, token, config).await;
+        }
+    };
+
+    futures::join!(one, two, three);
+
+    let end = Instant::now();
+    let elapsed = end.duration_since(start);
+    log::debug!("API execution took {:?}", elapsed);
 
     Ok(())
+}
+
+async fn req_and_send(
+    kind: Type,
+    channel: &SyncSender<Issue>,
+    user: &Option<String>,
+    targets: &[Target],
+    token: &str,
+    config: &FilterConfig,
+) {
+    let query: SearchIssues = create_query(kind, &user, targets, config);
+    let issues: Vec<Issue> = match api_request(query, token).await {
+        Ok(i) => i,
+        Err(e) => {
+            log::error!("Issue completing request: {:?}", e);
+            return;
+        }
+    };
+
+    for issue in issues {
+        if let Err(e) = channel.send(issue) {
+            log::debug!("Channel closed, {:?}", e);
+            break;
+        }
+    }
 }
 
 fn create_query(kind: Type, user: &Option<String>, targets: &[Target], config: &FilterConfig) -> SearchIssues {
