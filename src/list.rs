@@ -93,23 +93,26 @@ pub async fn list_issues(
 
     let one = async {
         if config.issues {
-            req_and_send(Type::Issue, &channel, &user, targets, token, config).await;
+            req_and_send(Type::Issue, &channel, &user, targets, token, config).await?;
         }
+        Ok::<(), AppErr>(())
     };
 
     let two = async {
         if config.pull_requests {
-            req_and_send(Type::PullRequest, &channel, &user, targets, token, config).await;
+            req_and_send(Type::PullRequest, &channel, &user, targets, token, config).await?;
         }
+        Ok::<(), AppErr>(())
     };
 
     let three = async {
         if config.review_requests {
-            req_and_send(Type::ReviewRequest, &channel, &user, targets, token, config).await;
+            req_and_send(Type::ReviewRequest, &channel, &user, targets, token, config).await?;
         }
+        Ok::<(), AppErr>(())
     };
 
-    futures::join!(one, two, three);
+    futures::try_join!(one, two, three)?;
 
     let end = Instant::now();
     let elapsed = end.duration_since(start);
@@ -125,22 +128,15 @@ async fn req_and_send(
     targets: &[Target],
     token: &str,
     config: &FilterConfig,
-) {
+) -> Result<(), AppErr> {
     let query: SearchIssues = create_query(kind, &user, targets, config);
-    let issues: Vec<Issue> = match api_request(query, token).await {
-        Ok(i) => i,
-        Err(e) => {
-            log::error!("Issue completing request: {:?}", e);
-            return;
-        }
-    };
+    let issues: Vec<Issue> = api_request(query, token).await?;
 
     for issue in issues {
-        if let Err(e) = channel.send(issue) {
-            log::debug!("Channel closed, {:?}", e);
-            break;
-        }
+        channel.send(issue)?;
     }
+
+    Ok(())
 }
 
 fn create_query(kind: Type, user: &Option<String>, targets: &[Target], config: &FilterConfig) -> SearchIssues {
