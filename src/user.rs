@@ -1,16 +1,14 @@
-use crate::{api::v4::CLIENT, AppErr};
+use crate::{search::GraphQLQuery, AppErr};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use std::io::Write;
 use std::path::PathBuf;
 use std::{fs::File, str::FromStr};
 
-const GITHUB_API_V3_URL: &str = "https://api.github.com";
-
 #[derive(Debug, Deserialize)]
 pub struct User {
     pub login: String,
-    pub id: u64,
+    pub id: String,
 }
 
 #[derive(Debug, Clone)]
@@ -50,10 +48,35 @@ impl From<reqwest::Error> for AppErr {
     }
 }
 
+#[derive(Debug, Deserialize)]
+struct Root {
+    pub data: Data,
+}
+
+#[derive(Debug, Deserialize)]
+struct Data {
+    pub viewer: Viewer,
+}
+
+#[derive(Debug, Deserialize)]
+struct Viewer {
+    login: String,
+    id: String,
+}
+
 async fn api_lookup_username(token: &str) -> Result<User, AppErr> {
-    let url: String = [GITHUB_API_V3_URL, "user"].join("/");
-    let response: reqwest::Response = CLIENT.get(&url).bearer_auth(token).send().await?;
-    Ok(response.json::<User>().await?)
+    let query = GraphQLQuery {
+        variables: serde_json::Value::Null,
+        query: String::from(include_str!("../data/graphql/queries/get_user.graphql")),
+        operation_name: String::from("GetUser"),
+    };
+
+    let root: Root = crate::api::v4::request(token, query).await?;
+    let user = User {
+        login: root.data.viewer.login,
+        id: root.data.viewer.id,
+    };
+    Ok(user)
 }
 
 fn save_username(token: &str, username: &str) -> Result<(), std::io::Error> {
