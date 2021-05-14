@@ -32,7 +32,8 @@ use tokio::runtime::Runtime;
 use ui::DisplayConfig;
 use user::Username;
 
-fn main() -> Result<(), AppErr> {
+#[tokio::main]
+async fn main() -> Result<(), AppErr> {
     let cfg: Config = Config::from_args();
 
     if cfg.print_debug() {
