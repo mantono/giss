@@ -48,6 +48,12 @@ pub struct Issue {
     pub kind: Type,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct Team {
+    pub name: String,
+    pub members: Vec<UserFields>,
+}
+
 impl PartialEq for Issue {
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id
@@ -57,10 +63,10 @@ impl PartialEq for Issue {
 impl Issue {
     pub fn has_review_request(&self, user: &str) -> bool {
         match &self.review_requets {
-            Some(req) => {
-                let users: Vec<&String> = req.nodes.iter().map(|n| &n.requested_reviewer.login).collect();
-                users.contains(&&user.to_string())
-            }
+            Some(req) => req
+                .nodes
+                .iter()
+                .any(|n| n.requested_reviewer.has_login(user)),
             None => false,
         }
     }
@@ -122,7 +128,38 @@ pub struct ReviewRequestNode {
 #[derive(Debug, Deserialize)]
 pub struct RequestedReviewer {
     #[serde(alias = "requestedReviewer")]
-    pub requested_reviewer: UserFields,
+    pub requested_reviewer: Assignable,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Assignable {
+    #[serde(alias = "__typename")]
+    pub assignable_type: String,
+    pub login: Option<String>,
+    pub id: Option<String>,
+    pub name: Option<String>,
+    pub members: Option<AssigneeNode>,
+}
+
+impl Assignable {
+    pub fn has_login(&self, login: &str) -> bool {
+        match self.assignable_type.as_str() {
+            "Team" => self
+                .members
+                .as_ref()
+                .expect("Type is Team so there must be members")
+                .nodes
+                .iter()
+                .any(|member| member.login == login),
+            "User" => {
+                self.login
+                    .as_ref()
+                    .expect("Type is User so there must be a login")
+                    == login
+            }
+            _ => panic!("Unrecognized type: {}", self.assignable_type),
+        }
+    }
 }
 
 impl ghrs::Closeable for Issue {

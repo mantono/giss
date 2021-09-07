@@ -1,86 +1,99 @@
 query SearchIssues($searchQuery: String!, $limit: Int = 10) {
-    viewer {
-        login
-        id
+  viewer {
+    login
+    id
+  }
+  search(query: $searchQuery, type: ISSUE, first: $limit) {
+    edges {
+      node {
+        __typename
+        ...issueFields
+        ...pullRequestFields
+      }
     }
-    search(query: $searchQuery, type: ISSUE, first: $limit) {
-        edges {
-            node {
-                __typename
-                ...issueFields
-                ...pullRequestFields
-            }
-        }
-    }
+  }
 }
 
 fragment issueFields on Issue {
-    databaseId
-    number
-    title
-    url
-    issueState: state
-    assignees(first: 10) {
-        nodes {
-            ...userFields
-        }
+  databaseId
+  number
+  title
+  url
+  issueState: state
+  assignees(first: 10) {
+    nodes {
+      ...userFields
     }
-    updatedAt
-    createdAt
-    labels(first: 10) {
-        nodes {
-            name
-        }
+  }
+  updatedAt
+  createdAt
+  labels(first: 10) {
+    nodes {
+      name
     }
-    repository {
-        nameWithOwner
-    }
-    comments {
-        totalCount
-    }
-    reactions {
-        totalCount
-    }
+  }
+  repository {
+    nameWithOwner
+  }
+  comments {
+    totalCount
+  }
+  reactions {
+    totalCount
+  }
 }
 
 fragment pullRequestFields on PullRequest {
-    databaseId
-    number
-    title
-    url
-    pullRequestState: state
-    updatedAt
-    createdAt
-    assignees(first: 10) {
-        nodes {
-            ...userFields
-        }
+  databaseId
+  number
+  title
+  url
+  pullRequestState: state
+  updatedAt
+  createdAt
+  assignees(first: 10) {
+    nodes {
+      ...userFields
     }
-    reviewRequests(first: 10) {
-        totalCount
-        nodes {
-            requestedReviewer {
-                ...userFields
-            }
-        }
+  }
+  reviewRequests(first: 10) {
+    totalCount
+    nodes {
+      requestedReviewer {
+        __typename
+        ...teamFields
+        ...userFields
+      }
     }
-    labels(first: 10) {
-        nodes {
-            name
-        }
+  }
+  labels(first: 10) {
+    nodes {
+      name
     }
-    repository {
-        nameWithOwner
-    }
-    comments {
-        totalCount
-    }
-    reactions {
-        totalCount
-    }
+  }
+  repository {
+    nameWithOwner
+  }
+  comments {
+    totalCount
+  }
+  reactions {
+    totalCount
+  }
 }
 
 fragment userFields on User {
-    login,
-    id
+  login
+  id
+  __typename
+}
+
+fragment teamFields on Team {
+  name
+  members {
+    nodes {
+      login
+      id
+    }
+  }
 }
