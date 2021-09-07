@@ -151,12 +151,11 @@ impl Assignable {
                 .nodes
                 .iter()
                 .any(|member| member.login == login),
-            "User" => {
-                self.login
-                    .as_ref()
-                    .expect("Type is User so there must be a login")
-                    == login
-            }
+            "User" => self
+                .login
+                .as_ref()
+                .expect("Type is User so there must be a login")
+                .eq(login),
             _ => panic!("Unrecognized type: {}", self.assignable_type),
         }
     }
