@@ -28,7 +28,7 @@ env_logger = "0.7"
 termcolor = "1.1"
 
 [build-dependencies]
-built = { version = "0.4", features = ["git2"] }
+built = { version = "0.6", features = ["git2"] }
 
 [profile.release]
 lto = true
