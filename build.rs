@@ -29,7 +29,6 @@ fn git_commit() -> String {
 
 fn cargo_data() -> Vec<String> {
     let mut data: Vec<String> = std::env::vars()
-        .into_iter()
         .filter(|(key, value)| include_env(key) && !value.is_empty())
         .map(|(key, value)| format!("{key}={value}"))
         .collect();
