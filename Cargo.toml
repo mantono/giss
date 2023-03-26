@@ -26,7 +26,7 @@ sha2 = "0.8"
 log = "0.4"
 env_logger = "0.7"
 termcolor = "1.1"
-giro = "0.1.1"
+giro = "0.1"
 
 [profile.release]
 lto = true

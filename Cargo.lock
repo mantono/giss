@@ -351,9 +351,9 @@ dependencies = [
 
 [[package]]
 name = "giro"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0e797b191f42ab4b100e77c15bd734dc7eb4c481b43fc99fe6f07884423f0d6"
+checksum = "67ebf7c1eef74d2c8ae56f5816c1ab6a91270f9898a7cbd8acdc5791eeac7e51"
 
 [[package]]
 name = "giss"
