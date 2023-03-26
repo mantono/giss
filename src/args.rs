@@ -3,15 +3,19 @@ use std::path::{Path, PathBuf};
 
 pub fn read_repo_from_file() -> Option<String> {
     let current_path: &Path = Path::new(".");
-    let repo_root: PathBuf = match traverse(&current_path) {
+    let repo_root: PathBuf = match giro::git_root(&current_path).unwrap() {
         Some(root) => root,
         None => return None,
     };
     let config_file: PathBuf = repo_root.join(".git").join("config");
     log::debug!("Using Git config file: '{:?}'", config_file);
-    let file_content: String = fs::read_to_string(config_file).expect("Could not find a git config");
+    let file_content: String =
+        fs::read_to_string(config_file).expect("Could not find a git config");
 
-    let lines: Vec<&str> = file_content.lines().filter(|f| f.contains("github.com")).collect();
+    let lines: Vec<&str> = file_content
+        .lines()
+        .filter(|f| f.contains("github.com"))
+        .collect();
 
     let repo: &str = lines
         .first()
@@ -21,21 +25,4 @@ pub fn read_repo_from_file() -> Option<String> {
         .expect("No match");
 
     Some(repo.trim_end_matches(".git").to_string())
-}
-
-fn traverse(path: &Path) -> Option<PathBuf> {
-    let path_full: PathBuf = path
-        .to_path_buf()
-        .canonicalize()
-        .expect("Could not create the canonical path");
-
-    let git_config: PathBuf = path_full.join(".git").join("config");
-    if git_config.exists() {
-        Some(path_full)
-    } else {
-        match path_full.parent() {
-            Some(parent) => traverse(parent),
-            None => None,
-        }
-    }
 }

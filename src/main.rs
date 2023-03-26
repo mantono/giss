@@ -1,4 +1,3 @@
-#[macro_use]
 extern crate clap;
 extern crate dirs_next;
 extern crate lazy_static;
@@ -9,7 +8,6 @@ extern crate structopt;
 mod api;
 mod args;
 mod cfg;
-mod dbg;
 mod github_resources;
 mod issue;
 mod list;
@@ -23,7 +21,6 @@ mod user;
 
 use crate::structopt::StructOpt;
 use cfg::Config;
-use dbg::dbg_info;
 use issue::Issue;
 use list::FilterConfig;
 use logger::setup_logging;
@@ -37,7 +34,7 @@ async fn main() -> Result<(), AppErr> {
     let cfg: Config = Config::from_args();
 
     if cfg.print_debug() {
-        println!("{}", dbg_info());
+        println!("{}", include_str!("../target/build_data"));
         return Ok(());
     }
 
