@@ -29,3 +29,6 @@ giro = "0.1"
 
 [profile.release]
 lto = true
+
+[registries.crates-io]
+protocol = "sparse"
