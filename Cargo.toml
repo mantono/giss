@@ -33,3 +33,6 @@ built = { version = "0.6", features = ["git2"] }
 
 [profile.release]
 lto = true
+
+[registries.crates-io]
+protocol = "sparse"
