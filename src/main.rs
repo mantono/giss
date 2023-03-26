@@ -1,4 +1,3 @@
-#[macro_use]
 extern crate clap;
 extern crate dirs_next;
 extern crate lazy_static;
