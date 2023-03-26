@@ -35,7 +35,7 @@ async fn main() -> Result<(), AppErr> {
     let cfg: Config = Config::from_args();
 
     if cfg.print_debug() {
-        println!("{}", include!("../target/build_data"));
+        println!("{}", include_str!("../target/build_data"));
         return Ok(());
     }
 
