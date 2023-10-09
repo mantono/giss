@@ -3,8 +3,22 @@
 
 ## Usage
 All commands requires a valid [GitHub API token](https://github.com/settings/tokens). The application will automatically read the environment variable
-`GITHUB_TOKEN`, but it can also be given when invoking the application with the `-t` or `--token` flag. The token does not need any permission for reading public repositories, but for private repositories is the `repo` permission required.
+`GITHUB_TOKEN`, but it can also be given when invoking the application with the `-t` or `--token` flag.
 
+### Token Permissions
+#### Classic Tokens
+The token needs the permission `read:org` for reading **public** repositories. For **private** repositories is the `repo` permission also required.
+
+| Permission | Required |
+| :--------: | :------: |
+| `read:org` | Yes      |
+| `repo`     | Only for private repository access |
+
+#### Fine-Grained Tokens
+The following _repository_ **read** permissions are required:
+ - Issues
+ - Metadata
+ - Pull requests
 ### List Issues & Pull Requests
 By default, simply invoking the name of the binary, `giss`, will list tickets that are either
 - issues
