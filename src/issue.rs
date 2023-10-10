@@ -1,3 +1,5 @@
+use std::borrow::Borrow;
+
 use crate::{github_resources::ghrs, search::Type};
 use serde::Deserialize;
 
@@ -66,7 +68,10 @@ impl Issue {
             Some(req) => req
                 .nodes
                 .iter()
-                .any(|n| n.requested_reviewer.has_login(user)),
+                .any(|n| match n.requested_reviewer.borrow() {
+                    Some(rr) => rr.has_login(user),
+                    None => false,
+                }),
             None => false,
         }
     }
@@ -128,7 +133,7 @@ pub struct ReviewRequestNode {
 #[derive(Debug, Deserialize)]
 pub struct RequestedReviewer {
     #[serde(alias = "requestedReviewer")]
-    pub requested_reviewer: Assignable,
+    pub requested_reviewer: Option<Assignable>,
 }
 
 #[derive(Debug, Deserialize)]
