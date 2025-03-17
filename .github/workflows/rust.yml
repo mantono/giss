@@ -22,7 +22,7 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v1
-      - uses: actions/cache@v1
+      - uses: actions/cache@v4
         id: cache-cargo-fetch
         with:
           key: ${{ runner.os }}-cargo-fetch-${{ hashFiles('Cargo.lock') }}
