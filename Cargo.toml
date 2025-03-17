@@ -11,7 +11,6 @@ build = "build.rs"
 
 [dependencies]
 clap = "4"
-structopt = "0.3"
 dirs-next = "1.0.2"
 itertools = "0.8"
 lazy_static = "1.4"
