@@ -9,11 +9,11 @@ use crate::{
     user::Username,
     AppErr,
 };
-use structopt::StructOpt;
+use clap::Parser;
 use termcolor::ColorChoice;
 
-#[derive(StructOpt, Debug)]
-#[structopt(name = "giss", author, about)]
+#[derive(Parser, Debug)]
+#[command(name = "giss", author, about)]
 pub struct Config {
     /// Name of target(s)
     ///
@@ -26,86 +26,86 @@ pub struct Config {
     /// GitHub API token
     ///
     /// API token that will be used when authenticating towards GitHub's API
-    #[structopt(short, long, env = "GITHUB_TOKEN", hide_env_values = true)]
+    #[arg(short, long, env = "GITHUB_TOKEN", hide_env_values = true)]
     token: Option<String>,
 
     /// Assigned only
     ///
     /// Only include issues and pull requests assigned to user
-    #[structopt(short, long)]
+    #[arg(short, long)]
     assigned: bool,
 
     /// Limit the number of issues or pull requests to list
-    #[structopt(short = "n", long, default_value = "10")]
+    #[arg(short = 'n', long, default_value = "10")]
     limit: u32,
 
     /// Show open issues or pull requests
     ///
     /// Include issues, pull request or review requests that are open. If neither this flag nor
     /// --closed/-c is given, default behavior will be to display open issues or pull requests.
-    #[structopt(short, long)]
+    #[arg(short, long)]
     open: bool,
 
     /// Show closed issues or pull requests
     ///
     /// Include issues, pull request or review requests that are closed or merged
-    #[structopt(short, long)]
+    #[arg(short, long)]
     closed: bool,
 
     /// Filter by label
     ///
     /// Only include issues, pull requests or review reuests which has (all) the given label(s).
-    #[structopt(short, long)]
+    #[arg(short, long)]
     labels: Vec<String>,
 
     /// Filter by project
     ///
     /// Only include isses, pull request or review requests which is assoicated with the
     /// given project.
-    #[structopt(short = "P", long)]
+    #[arg(short = 'P', long)]
     project: Option<Project>,
 
     /// List issues
-    #[structopt(short, long)]
+    #[arg(short, long)]
     issues: bool,
 
     /// List pull requests
-    #[structopt(short, long)]
+    #[arg(short, long)]
     pull_requests: bool,
 
     /// List review requests
-    #[structopt(short, long)]
+    #[arg(short, long)]
     review_requests: bool,
 
     /// Sort by
     ///
     /// Sort by any of the following properties; "created", "updated", "comments", "reactions"
-    #[structopt(short, long)]
+    #[arg(short, long)]
     sort_by: Option<Property>,
 
     /// Ordering
     ///
     /// Can be either ascending (asc|ascending) or decending (desc|descending)
-    #[structopt(short = "O", long)]
+    #[arg(short = 'O', long)]
     order: Option<Order>,
 
     /// Search
     ///
     /// Search by a string, which must be present either in the title or the body of an
     /// issue or pull request.
-    #[structopt(short = "S", long)]
+    #[arg(short = 'S', long)]
     search: Option<String>,
 
     /// Username
     ///
     /// Username to use for the query. Will default to the username for the user of the token.
-    #[structopt(short, long)]
+    #[arg(short, long)]
     user: Option<Username>,
 
     /// Show links
     ///
     /// Show links to each issue or pull request in the output
-    #[structopt(short = "L", long)]
+    #[arg(short = 'L', long)]
     links: bool,
 
     /// Set use of colors
@@ -114,21 +114,21 @@ pub struct Config {
     /// try to figure out if colors are supported by the terminal in the current context, and use it
     /// if possible.
     /// Possible values are "on", "true", "off", "false", "auto".
-    #[structopt(long = "colors", default_value = "auto")]
+    #[arg(long = "colors", default_value = "auto")]
     colors: Flag,
 
     /// Set verbosity level, 0 - 5
     ///
     /// Set the verbosity level, from 0 (least amount of output) to 5 (most verbose). Note that
     /// logging level configured via RUST_LOG overrides this setting.
-    #[structopt(short, long, default_value = "1")]
+    #[arg(short, long, default_value = "1")]
     verbosity: Verbosity,
 
     /// Prind debug information
     ///
     /// Print debug information about current build for binary, useful for when an issue is
     /// encountered and reported
-    #[structopt(short = "D", long)]
+    #[arg(short = 'D', long)]
     debug: bool,
 }
 
@@ -152,7 +152,7 @@ impl FromStr for Flag {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Verbosity(u8);
 
 impl Verbosity {
