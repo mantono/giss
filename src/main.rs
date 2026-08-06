@@ -43,7 +43,7 @@ async fn main() -> Result<(), AppErr> {
     let token: String = cfg.token()?;
     let targets: Vec<Target> = cfg.target()?;
     let user: Option<Username> = cfg.username();
-    log::debug!("Config: {:?}", &cfg);
+    log::debug!("Config: {:?}", cfg);
 
     let filter: FilterConfig = (&cfg).into();
     let display: DisplayConfig = (&cfg).into();

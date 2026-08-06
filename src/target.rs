@@ -18,7 +18,6 @@ impl FromStr for Target {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let parts: Vec<String> = TARGET
             .find_iter(s)
-            .into_iter()
             .map(|x| x.as_str().to_string())
             .collect();
         match parts.len() {
