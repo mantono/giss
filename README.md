@@ -36,6 +36,7 @@ If the command is not invoked from a Git repository, an explicit repository will
 - `giss -c` - List only closed tickets in current repo
 - `giss -oc` - List both open and closed tickets in current repo
 - `giss -a` - List only open tickets assigned to user\* in current repo
+- `giss -U` - List only open tickets with no assignee in current repo
 - `giss -i` - List only open issues in current repo
 - `giss -p` - List only open pull requests in current repo
 - `giss -r` - List only review requests for user\*
@@ -82,6 +83,11 @@ FLAGS:
 
     -r, --review-requests
             List review requests
+
+    -U, --unassigned
+            Unassigned only
+
+            Only include issues, pull requests or review requests with no assignee
 
     -V, --version
             Prints version information

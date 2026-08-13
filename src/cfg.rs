@@ -32,8 +32,14 @@ pub struct Config {
     /// Assigned only
     ///
     /// Only include issues and pull requests assigned to user
-    #[structopt(short, long)]
+    #[structopt(short, long, conflicts_with = "unassigned")]
     assigned: bool,
+
+    /// Unassigned only
+    ///
+    /// Only include issues, pull requests or review requests with no assignee
+    #[structopt(short = "U", long, conflicts_with = "assigned")]
+    unassigned: bool,
 
     /// Limit the number of issues or pull requests to list
     #[structopt(short = "n", long, default_value = "10")]
@@ -220,6 +226,10 @@ impl Config {
 
     pub fn assigned_only(&self) -> bool {
         self.assigned
+    }
+
+    pub fn unassigned_only(&self) -> bool {
+        self.unassigned
     }
 
     fn all(&self) -> bool {

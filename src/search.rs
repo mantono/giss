@@ -39,6 +39,7 @@ impl Display for Type {
 pub struct SearchIssues {
     pub state: StateFilter,
     pub assignee: Option<String>,
+    pub unassigned: bool,
     pub review_requested: Option<String>,
     pub archived: bool,
     pub labels: Vec<String>,
@@ -69,6 +70,7 @@ impl SearchQuery for SearchIssues {
             self.search_type(),
             self.state(),
             self.assignee(),
+            self.unassigned(),
             Some(self.archived()),
             self.users(),
             self.labels(),
@@ -108,6 +110,10 @@ impl SearchIssues {
             Some(name) => Some(format!("assignee:{}", name)),
             None => None,
         }
+    }
+
+    fn unassigned(&self) -> Option<String> {
+        self.unassigned.then(|| String::from("no:assignee"))
     }
 
     fn archived(&self) -> String {
