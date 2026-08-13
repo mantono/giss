@@ -32,8 +32,14 @@ pub struct Config {
     /// Assigned only
     ///
     /// Only include issues and pull requests assigned to user
-    #[arg(short, long)]
+    #[arg(short, long, conflicts_with = "unassigned")]
     assigned: bool,
+
+    /// Unassigned only
+    ///
+    /// Only include issues, pull requests or review requests with no assignee
+    #[arg(short = 'U', long, conflicts_with = "assigned")]
+    unassigned: bool,
 
     /// Limit the number of issues or pull requests to list
     #[arg(short = 'n', long, default_value = "10")]
@@ -222,6 +228,10 @@ impl Config {
         self.assigned
     }
 
+    pub fn unassigned_only(&self) -> bool {
+        self.unassigned
+    }
+
     fn all(&self) -> bool {
         !self.issues && !self.pull_requests && !self.review_requests
     }
@@ -272,5 +282,25 @@ impl Config {
 
     pub fn print_debug(&self) -> bool {
         self.debug
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_unassigned_short_and_long_flags() {
+        assert!(Config::try_parse_from(["giss", "-U"])
+            .unwrap()
+            .unassigned_only());
+        assert!(Config::try_parse_from(["giss", "--unassigned"])
+            .unwrap()
+            .unassigned_only());
+    }
+
+    #[test]
+    fn rejects_assigned_and_unassigned_together() {
+        assert!(Config::try_parse_from(["giss", "-a", "-U"]).is_err());
     }
 }

@@ -39,6 +39,7 @@ impl Display for Type {
 pub struct SearchIssues {
     pub state: StateFilter,
     pub assignee: Option<String>,
+    pub unassigned: bool,
     pub review_requested: Option<String>,
     pub archived: bool,
     pub labels: Vec<String>,
@@ -69,6 +70,7 @@ impl SearchQuery for SearchIssues {
             self.search_type(),
             self.state(),
             self.assignee(),
+            self.unassigned(),
             Some(self.archived()),
             self.users(),
             self.labels(),
@@ -107,6 +109,10 @@ impl SearchIssues {
         self.assignee.as_ref().map(|name| format!("assignee:{}", name))
     }
 
+    fn unassigned(&self) -> Option<String> {
+        self.unassigned.then(|| String::from("no:assignee"))
+    }
+
     fn archived(&self) -> String {
         String::from("archived:false")
     }
@@ -138,5 +144,35 @@ impl SearchIssues {
 
     fn search(&self) -> Option<String> {
         self.search.clone().map(|s| format!("in:title,body {}", s))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::sort::{Order, Property, Sorting};
+
+    #[test]
+    fn includes_no_assignee_qualifier_for_unassigned_searches() {
+        let query = SearchIssues {
+            state: StateFilter::Open,
+            assignee: None,
+            unassigned: true,
+            review_requested: None,
+            archived: false,
+            labels: vec![],
+            project: None,
+            resource_type: Some(Type::PullRequest),
+            targets: vec![],
+            sort: Sorting(Property::default(), Order::default()),
+            search: None,
+            limit: 10,
+        }
+        .build();
+
+        assert!(query.variables["searchQuery"]
+            .as_str()
+            .unwrap()
+            .contains("no:assignee"));
     }
 }

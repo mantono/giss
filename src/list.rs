@@ -17,6 +17,7 @@ use std::{
 #[derive(Debug)]
 pub struct FilterConfig {
     assigned_only: bool,
+    unassigned_only: bool,
     pull_requests: bool,
     review_requests: bool,
     issues: bool,
@@ -48,6 +49,7 @@ impl From<&Config> for FilterConfig {
     fn from(cfg: &Config) -> Self {
         FilterConfig {
             assigned_only: cfg.assigned_only(),
+            unassigned_only: cfg.unassigned_only(),
             pull_requests: cfg.pulls(),
             review_requests: cfg.reviews(),
             labels: cfg.label(),
@@ -158,6 +160,7 @@ fn create_query(kind: Type, user: &Option<String>, targets: &[Target], config: &
     SearchIssues {
         archived: false,
         assignee,
+        unassigned: config.unassigned_only,
         resource_type: Some(kind),
         review_requested,
         sort: config.sorting,
