@@ -274,3 +274,19 @@ impl Config {
         self.debug
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_unassigned_short_and_long_flags() {
+        assert!(Config::from_iter(&["giss", "-U"]).unassigned_only());
+        assert!(Config::from_iter(&["giss", "--unassigned"]).unassigned_only());
+    }
+
+    #[test]
+    fn rejects_assigned_and_unassigned_together() {
+        assert!(Config::from_iter_safe(&["giss", "-a", "-U"]).is_err());
+    }
+}

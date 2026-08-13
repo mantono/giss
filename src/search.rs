@@ -143,3 +143,33 @@ impl SearchIssues {
         self.search.clone().map(|s| format!("in:title,body {}", s))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::sort::{Order, Property, Sorting};
+
+    #[test]
+    fn includes_no_assignee_qualifier_for_unassigned_searches() {
+        let query = SearchIssues {
+            state: StateFilter::Open,
+            assignee: None,
+            unassigned: true,
+            review_requested: None,
+            archived: false,
+            labels: vec![],
+            project: None,
+            resource_type: Some(Type::PullRequest),
+            targets: vec![],
+            sort: Sorting(Property::default(), Order::default()),
+            search: None,
+            limit: 10,
+        }
+        .build();
+
+        assert!(query.variables["searchQuery"]
+            .as_str()
+            .unwrap()
+            .contains("no:assignee"));
+    }
+}
