@@ -38,7 +38,7 @@ pub struct Config {
     /// Unassigned only
     ///
     /// Only include issues, pull requests or review requests with no assignee
-    #[structopt(short = "U", long, conflicts_with = "assigned")]
+    #[arg(short = 'U', long, conflicts_with = "assigned")]
     unassigned: bool,
 
     /// Limit the number of issues or pull requests to list
@@ -291,12 +291,16 @@ mod tests {
 
     #[test]
     fn parses_unassigned_short_and_long_flags() {
-        assert!(Config::from_iter(&["giss", "-U"]).unassigned_only());
-        assert!(Config::from_iter(&["giss", "--unassigned"]).unassigned_only());
+        assert!(Config::try_parse_from(["giss", "-U"])
+            .unwrap()
+            .unassigned_only());
+        assert!(Config::try_parse_from(["giss", "--unassigned"])
+            .unwrap()
+            .unassigned_only());
     }
 
     #[test]
     fn rejects_assigned_and_unassigned_together() {
-        assert!(Config::from_iter_safe(&["giss", "-a", "-U"]).is_err());
+        assert!(Config::try_parse_from(["giss", "-a", "-U"]).is_err());
     }
 }
