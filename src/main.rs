@@ -3,7 +3,6 @@ extern crate dirs_next;
 extern crate lazy_static;
 extern crate log;
 extern crate regex;
-extern crate structopt;
 
 mod api;
 mod args;
@@ -19,8 +18,8 @@ mod target;
 mod ui;
 mod user;
 
-use crate::structopt::StructOpt;
 use cfg::Config;
+use clap::Parser;
 use issue::Issue;
 use list::FilterConfig;
 use logger::setup_logging;
@@ -31,7 +30,7 @@ use user::Username;
 
 #[tokio::main]
 async fn main() -> Result<(), AppErr> {
-    let cfg: Config = Config::from_args();
+    let cfg: Config = Config::parse();
 
     if cfg.print_debug() {
         println!("{}", include_str!("../target/build_data"));
@@ -43,7 +42,7 @@ async fn main() -> Result<(), AppErr> {
     let token: String = cfg.token()?;
     let targets: Vec<Target> = cfg.target()?;
     let user: Option<Username> = cfg.username();
-    log::debug!("Config: {:?}", &cfg);
+    log::debug!("Config: {:?}", cfg);
 
     let filter: FilterConfig = (&cfg).into();
     let display: DisplayConfig = (&cfg).into();

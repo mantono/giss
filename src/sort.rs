@@ -21,8 +21,10 @@ impl Sorting {
 }
 
 #[derive(Debug, Clone, Copy)]
+#[derive(Default)]
 pub enum Property {
     Created,
+    #[default]
     Updated,
     Comments,
     Reactions,
@@ -48,11 +50,6 @@ impl Order {
     }
 }
 
-impl Default for Property {
-    fn default() -> Self {
-        Property::Updated
-    }
-}
 
 impl FromStr for Property {
     type Err = &'static str;
@@ -81,16 +78,13 @@ impl Display for Property {
 }
 
 #[derive(Debug, Clone, Copy)]
+#[derive(Default)]
 pub enum Order {
+    #[default]
     Descending,
     Ascending,
 }
 
-impl Default for Order {
-    fn default() -> Self {
-        Order::Descending
-    }
-}
 
 impl FromStr for Order {
     type Err = &'static str;

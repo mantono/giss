@@ -106,10 +106,7 @@ impl SearchIssues {
     }
 
     fn assignee(&self) -> Option<String> {
-        match &self.assignee {
-            Some(name) => Some(format!("assignee:{}", name)),
-            None => None,
-        }
+        self.assignee.as_ref().map(|name| format!("assignee:{}", name))
     }
 
     fn unassigned(&self) -> Option<String> {

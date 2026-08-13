@@ -131,7 +131,7 @@ async fn req_and_send(
     token: &str,
     config: &FilterConfig,
 ) -> Result<(), AppErr> {
-    let query: SearchIssues = create_query(kind, &user, targets, config);
+    let query: SearchIssues = create_query(kind, user, targets, config);
     let issues: Vec<Issue> = api_request(query, token).await?;
 
     for issue in issues {
